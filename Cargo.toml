@@ -1,0 +1,11 @@
+[package]
+name = "rust-libcint"
+version = "0.1.0"
+authors = ["Igor Ying Zhang <igor_zhangying@fudan.edu.cn>"]
+edition = "2018"
+description = "Provide wrappers for libcint (C)"
+license = "MIT OR Apache-2.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
