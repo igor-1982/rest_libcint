@@ -6,6 +6,83 @@
 //!
 //! Please visit <https://github.com/sunqm/libcint> for more details about the installation and the usage of libcint
 //!
+//! The `CINTR2CDATA` struct groups all necessary data for using `libcint`.
+//! Various kinds of analytical Gaussian-type orbital (GTO) integrals provided by `libcint` are then wrapped as the methods defined on the `CINTR2CDATA` struct.
+//!
+//! Currently, only four kinds of integrals, including 1) the one-electron kinetic integral,
+//! 2) the one-electron nuclear attractive integral, 3) the one-electron overlap integral,
+//! and 4) the two-electron repulsive integral are available for both spheric and Cartesian GTOs.
+//! The other kinds of integrals are not yet ready in the current version.
+//!
+//! # Examples
+//!
+//! Prepare `atm`, `bas` and `env` with the same data structures of those used by `libcint`.
+//! Refer to <https://github.com/sunqm/libcint/blob/master/doc/program_ref.pdf> for the details of these data structures.
+//!
+//! ```
+//! use rust_libcint::{CINTR2CDATA,CintType};
+//! let mut atm: Vec<Vec<i32>> = vec![];
+//! atm.push(vec![2,0,0,0,0,0]);
+//! let mut natm = atm.len() as i32;
+//! let mut bas: Vec<Vec<i32>> = vec![];
+//! bas.push(vec![0,1,1,1,1,3,4,0]);
+//! bas.push(vec![0,2,1,1,1,5,6,0]);
+//! let mut nbas = bas.len() as i32;
+//! let mut env: Vec<f64> = vec![0.0,0.0,0.0,2.0,1.0,1.5,0.5];
+//! let mut cint_data = rust_libcint::CINTR2CDATA::new();
+//! // Transfer `atm`, `bas`, and `env` to the raw pointers,
+//! // and organize them by the `CINTR2CDATA` structure.
+//! cint_data.initial_r2c(&atm,natm,&bas,nbas,env);
+//! ```
+//! The 2-electron repulsive integrals (ERIs) for spheric Gaussian-type orbitals
+//! ```
+//! // The GTO functions considered here are shperic.
+//! // For Cartesian GTOs, replace `CintType::Spheric` by 
+//! //  `CintType::Cartesian` on the following line:
+//! cint_data.set_cint_type(CintType::Spheric);
+//! cint_data.cint2e_optimizer_rust();
+//! let buf = cint_data.cint_ijkl(0,1,1,0);
+//! let mut v1:f64=0.0;
+//! println!("{:?}",&buf);
+//! &buf.into_iter().for_each(|i| {v1 += i.abs()});
+//! println!("v1: {}",v1);
+//! ```
+//! The one-electron overlap integrals for spheric Gaussian-type orbitals
+//! ```
+//! cint_data.cint_del_optimizer_rust();
+//! // The GTO functions considered here are shperic
+//! cint_data.set_cint_type(CintType::Spheric);
+//! cint_data.cint1e_ovlp_optimizer_rust();
+//! let buf = cint_data.cint_ijovlp(0,1);
+//! let mut v1:f64=0.0;
+//! println!("{:?}",&buf);
+//! &buf.into_iter().for_each(|i| {v1 += i.abs()});
+//! println!("v1: {}",v1);
+//! ```
+//! The one-electron kinetic integrals for Cartesian Gaussian-type orbitals
+//! ```
+//! cint_data.cint_del_optimizer_rust();
+//! // The GTO functions considered here are Cartesian
+//! cint_data.set_cint_type(CintType::Cartesian);
+//! cint_data.cint1e_kin_optimizer_rust();
+//! let buf = cint_data.cint_ijkin(0,1);
+//! let mut v1:f64=0.0;
+//! println!("{:?}",&buf);
+//! &buf.into_iter().for_each(|i| {v1 += i.abs()});
+//! println!("v1: {}",v1);
+//! ```
+//! The one-electron nuclear attraction integrals for Cartesian Gaussian-type orbitals
+//! ```
+//! cint_data.cint_del_optimizer_rust();
+//! // The GTO functions considered here are Cartesian
+//! cint_data.set_cint_type(CintType::Cartesian);
+//! cint_data.cint1e_nuc_optimizer_rust();
+//! let buf = cint_data.cint_ijnuc(0,1);
+//! let mut v1:f64=0.0;
+//! println!("{:?}",&buf);
+//! &buf.into_iter().for_each(|i| {v1 += i.abs()});
+//! println!("v1: {}",v1);
+//! ```
 #![allow(unused)]
 use std::os::raw::c_int;
 //use std::os::raw::c_double;
@@ -32,53 +109,6 @@ pub struct CINTR2CDATA {
     cint_type: CintType,
 }
 
-/// A new type that groups all necessary data to communicate with libcint
-///
-/// # Examples
-///
-/// ```
-/// use rust_libcint::{CINT2CDATA,CintType};
-/// let mut atm: Vec<Vec<i32>> = vec![];
-/// atm.push(vec![2,0,0,0,0,0]);
-/// let mut bas: Vec<Vec<i32>> = vec![];
-/// bas.push(vec![0,1,1,1,1,3,4,0]);
-/// bas.push(vec![0,2,1,1,1,5,6,0]);
-/// let mut env: Vec<f64> = vec![0.0,0.0,0.0,2.0,1.0,1.5,0.5];
-/// let mut cint_data = rust_libcint::CINTR2CDATA::new();
-/// cint_data.initial_r2c(&atm,1,&bas,2,env);
-/// ```
-/// 2-electron analytic integrals for the shperic Gaussian-type orbitals
-/// ```
-/// cint_data.set_cint_type(CintType::Spheric);
-/// cint_data.cint2e_optimizer_rust();
-/// let buf = cint_data.cint_ijkl(0,1,1,0);
-/// let mut v1:f64=0.0;
-/// println!("{:?}",&buf);
-/// &buf.into_iter().for_each(|i| {v1 += i.abs()});
-/// println!("v1: {}",v1);
-/// ```
-/// the overlap integrals for the shperic Gaussian-type orbitals
-/// ```
-/// cint_data.cint_del_optimizer_rust();
-/// cint_data.set_cint_type(CintType::Spheric);
-/// cint_data.cint1e_ovlp_optimizer_rust();
-/// let buf = cint_data.cint_ijovlp(0,1);
-/// let mut v1:f64=0.0;
-/// println!("{:?}",&buf);
-/// &buf.into_iter().for_each(|i| {v1 += i.abs()});
-/// println!("v1: {}",v1);
-/// ```
-/// the kinetic integrals for the cartesian Gaussian-type orbitals
-/// ```
-/// cint_data.cint_del_optimizer_rust();
-/// cint_data.set_cint_type(CintType::Cartesian);
-/// cint_data.cint1e_kin_optimizer_rust();
-/// let buf = cint_data.cint_ijkin(0,1);
-/// let mut v1:f64=0.0;
-/// println!("{:?}",&buf);
-/// &buf.into_iter().for_each(|i| {v1 += i.abs()});
-/// println!("v1: {}",v1);
-/// ```
 impl CINTR2CDATA {
     /// create a new, empty CINTR2CDATA.
     pub fn new() -> CINTR2CDATA {
@@ -338,48 +368,48 @@ impl CINTR2CDATA {
     }
 }
 
-pub fn cint2e_sph_rust(mut buf: Vec<f64>, mut shls: Vec<i32>, 
-                   c_atm: & *mut c_int, c_natm:c_int, 
-                   c_bas: & *mut c_int, c_nbas:c_int, 
-                   c_env: & *mut f64,
-                   c_opt: & *mut CINTOpt) -> Vec<f64> {
-    //
-    buf.shrink_to_fit();
-    let mut buf = ManuallyDrop::new(buf);
-    let (c_buf, buf_len, buf_cap) = (buf.as_mut_ptr() as *mut f64, buf.len(), buf.capacity());
-
-    shls.shrink_to_fit();
-    let mut shls = ManuallyDrop::new(shls);
-    let (c_shls,shls_len,shls_cap) = (shls.as_mut_ptr() as *mut c_int,shls.len(),shls.capacity());
-    let mut new_buf:Vec<f64>;
-    unsafe {
-        cint::cint2e_sph(c_buf, c_shls, *c_atm, c_natm, *c_bas, c_nbas, *c_env, *c_opt);
-        //println!("debug 1 {}", &c_buf.read());
-        let shls = Vec::from_raw_parts(c_shls, shls_len, shls_cap);
-        new_buf = Vec::from_raw_parts(c_buf, buf_len, buf_cap);
-        //println!("debug 2");
-        //vec![0.0,0.0]
-    }
-    new_buf
-}
-pub fn cint1e_ovlp_sph_rust(mut buf: Vec<f64>, mut shls: Vec<i32>, 
-                   c_atm: & *mut c_int, c_natm:c_int, 
-                   c_bas: & *mut c_int, c_nbas:c_int, 
-                   c_env: & *mut f64,
-                   c_opt: & *mut CINTOpt) -> Vec<f64> {
-    //
-    buf.shrink_to_fit();
-    let mut buf = ManuallyDrop::new(buf);
-    let (c_buf, buf_len, buf_cap) = (buf.as_mut_ptr() as *mut f64, buf.len(), buf.capacity());
-
-    shls.shrink_to_fit();
-    let mut shls = ManuallyDrop::new(shls);
-    let (c_shls,shls_len,shls_cap) = (shls.as_mut_ptr() as *mut c_int,shls.len(),shls.capacity());
-    let mut new_buf:Vec<f64>;
-    unsafe {
-        cint::cint1e_ovlp_sph(c_buf, c_shls, *c_atm, c_natm, *c_bas, c_nbas, *c_env, *c_opt);
-        let shls = Vec::from_raw_parts(c_shls, shls_len, shls_cap);
-        new_buf = Vec::from_raw_parts(c_buf, buf_len, buf_cap);
-    }
-    new_buf
-}
+//pub fn cint2e_sph_rust(mut buf: Vec<f64>, mut shls: Vec<i32>, 
+//                   c_atm: & *mut c_int, c_natm:c_int, 
+//                   c_bas: & *mut c_int, c_nbas:c_int, 
+//                   c_env: & *mut f64,
+//                   c_opt: & *mut CINTOpt) -> Vec<f64> {
+//    //
+//    buf.shrink_to_fit();
+//    let mut buf = ManuallyDrop::new(buf);
+//    let (c_buf, buf_len, buf_cap) = (buf.as_mut_ptr() as *mut f64, buf.len(), buf.capacity());
+//
+//    shls.shrink_to_fit();
+//    let mut shls = ManuallyDrop::new(shls);
+//    let (c_shls,shls_len,shls_cap) = (shls.as_mut_ptr() as *mut c_int,shls.len(),shls.capacity());
+//    let mut new_buf:Vec<f64>;
+//    unsafe {
+//        cint::cint2e_sph(c_buf, c_shls, *c_atm, c_natm, *c_bas, c_nbas, *c_env, *c_opt);
+//        //println!("debug 1 {}", &c_buf.read());
+//        let shls = Vec::from_raw_parts(c_shls, shls_len, shls_cap);
+//        new_buf = Vec::from_raw_parts(c_buf, buf_len, buf_cap);
+//        //println!("debug 2");
+//        //vec![0.0,0.0]
+//    }
+//    new_buf
+//}
+//pub fn cint1e_ovlp_sph_rust(mut buf: Vec<f64>, mut shls: Vec<i32>, 
+//                   c_atm: & *mut c_int, c_natm:c_int, 
+//                   c_bas: & *mut c_int, c_nbas:c_int, 
+//                   c_env: & *mut f64,
+//                   c_opt: & *mut CINTOpt) -> Vec<f64> {
+//    //
+//    buf.shrink_to_fit();
+//    let mut buf = ManuallyDrop::new(buf);
+//    let (c_buf, buf_len, buf_cap) = (buf.as_mut_ptr() as *mut f64, buf.len(), buf.capacity());
+//
+//    shls.shrink_to_fit();
+//    let mut shls = ManuallyDrop::new(shls);
+//    let (c_shls,shls_len,shls_cap) = (shls.as_mut_ptr() as *mut c_int,shls.len(),shls.capacity());
+//    let mut new_buf:Vec<f64>;
+//    unsafe {
+//        cint::cint1e_ovlp_sph(c_buf, c_shls, *c_atm, c_natm, *c_bas, c_nbas, *c_env, *c_opt);
+//        let shls = Vec::from_raw_parts(c_shls, shls_len, shls_cap);
+//        new_buf = Vec::from_raw_parts(c_buf, buf_len, buf_cap);
+//    }
+//    new_buf
+//}
