@@ -1,6 +1,6 @@
 [package]
 name = "rust-libcint"
-version = "0.1.2"
+version = "0.1.3"
 authors = ["Igor Ying Zhang <igor_zhangying@fudan.edu.cn>"]
 edition = "2018"
 description = "Provide wrappers for libcint (C)"
