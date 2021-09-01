@@ -2,7 +2,7 @@
 //!
 //! The `rust-libcint` crate provides wrappers for libcint (C).
 //!
-//! In order to use the crate correctly, the libcint should be installed with the outcome library `libcint.so` stored in a reachable path.
+//! In order to use the crate, the libcint should be installed with the outcome library `libcint.so` stored in a reachable path by users.
 //!
 //! Please visit <https://github.com/sunqm/libcint> for more details about the installation and the usage of libcint
 //!
@@ -16,26 +16,30 @@
 //!
 //! # Examples
 //!
-//! Prepare `atm`, `bas` and `env` with the same data structures of those used by `libcint`.
-//! Refer to <https://github.com/sunqm/libcint/blob/master/doc/program_ref.pdf> for the details of these data structures.
 //!
 //! ```
+//! //=============================================================================
+//! // Prepare `atm`, `bas` and `env` with the same data structures of those used by `libcint`.
+//! // Refer to <https://github.com/sunqm/libcint/blob/master/doc/program_ref.pdf> 
+//! // for the details of these data structures.
+//! //=============================================================================
 //! use rust_libcint::{CINTR2CDATA,CintType};
 //! let mut atm: Vec<Vec<i32>> = vec![];
 //! atm.push(vec![2,0,0,0,0,0]);
+//! atm.push(vec![4,3,0,0,0,0]);
 //! let mut natm = atm.len() as i32;
 //! let mut bas: Vec<Vec<i32>> = vec![];
-//! bas.push(vec![0,1,1,1,1,3,4,0]);
-//! bas.push(vec![0,2,1,1,1,5,6,0]);
+//! bas.push(vec![0,1,1,1,1,6,7,0]);
+//! bas.push(vec![0,2,1,1,1,8,9,0]);
 //! let mut nbas = bas.len() as i32;
-//! let mut env: Vec<f64> = vec![0.0,0.0,0.0,2.0,1.0,1.5,0.5];
-//! let mut cint_data = rust_libcint::CINTR2CDATA::new();
+//! let mut env: Vec<f64> = vec![0.0,0.0,0.0,0.7,0.0,0.0,1.0,1.0,0.5,1.0];
+//! let mut cint_data = CINTR2CDATA::new();
 //! // Transfer `atm`, `bas`, and `env` to the raw pointers,
 //! // and organize them by the `CINTR2CDATA` structure.
 //! cint_data.initial_r2c(&atm,natm,&bas,nbas,env);
-//! ```
-//! The 2-electron repulsive integrals (ERIs) for spheric Gaussian-type orbitals
-//! ```
+//! //=============================================================================
+//! //The 2-electron repulsive integrals (ERIs) for spheric Gaussian-type orbitals
+//! //=============================================================================
 //! // The GTO functions considered here are shperic.
 //! // For Cartesian GTOs, replace `CintType::Spheric` by 
 //! //  `CintType::Cartesian` on the following line:
@@ -43,51 +47,50 @@
 //! cint_data.cint2e_optimizer_rust();
 //! let buf = cint_data.cint_ijkl(0,1,1,0);
 //! let mut v1:f64=0.0;
-//! println!("{:?}",&buf);
 //! &buf.into_iter().for_each(|i| {v1 += i.abs()});
-//! println!("v1: {}",v1);
-//! ```
-//! The one-electron overlap integrals for spheric Gaussian-type orbitals
-//! ```
+//! println!("The reference data for cint2e ERIs: 0.5745411555937561; v1: {:18.16}; ",v1);
+//! //=============================================================================
+//! //The one-electron overlap integrals for spheric Gaussian-type orbitals
+//! //=============================================================================
 //! cint_data.cint_del_optimizer_rust();
 //! // The GTO functions considered here are shperic
 //! cint_data.set_cint_type(CintType::Spheric);
 //! cint_data.cint1e_ovlp_optimizer_rust();
 //! let buf = cint_data.cint_ijovlp(0,1);
 //! let mut v1:f64=0.0;
-//! println!("{:?}",&buf);
 //! &buf.into_iter().for_each(|i| {v1 += i.abs()});
-//! println!("v1: {}",v1);
-//! ```
-//! The one-electron kinetic integrals for Cartesian Gaussian-type orbitals
-//! ```
+//! println!("The reference data for cint1e_ovlp: 0.7096366827378776; v1: {:18.16}; ",v1);
+//! //=============================================================================
+//! //The one-electron kinetic integrals for Cartesian Gaussian-type orbitals
+//! //=============================================================================
 //! cint_data.cint_del_optimizer_rust();
 //! // The GTO functions considered here are Cartesian
 //! cint_data.set_cint_type(CintType::Cartesian);
 //! cint_data.cint1e_kin_optimizer_rust();
 //! let buf = cint_data.cint_ijkin(0,1);
 //! let mut v1:f64=0.0;
-//! println!("{:?}",&buf);
 //! &buf.into_iter().for_each(|i| {v1 += i.abs()});
-//! println!("v1: {}",v1);
-//! ```
-//! The one-electron nuclear attraction integrals for Cartesian Gaussian-type orbitals
-//! ```
+//! println!("The reference data for cint1e_kin : 1.5780816190296618; v1: {:18.16}; ",v1);
+//! //=============================================================================
+//! //The one-electron nuclear attraction integrals for Cartesian Gaussian-type orbitals
+//! //=============================================================================
 //! cint_data.cint_del_optimizer_rust();
 //! // The GTO functions considered here are Cartesian
 //! cint_data.set_cint_type(CintType::Cartesian);
 //! cint_data.cint1e_nuc_optimizer_rust();
 //! let buf = cint_data.cint_ijnuc(0,1);
 //! let mut v1:f64=0.0;
-//! println!("{:?}",&buf);
 //! &buf.into_iter().for_each(|i| {v1 += i.abs()});
-//! println!("v1: {}",v1);
+//! println!("The reference data for cint1e_nuc : 4.0007622494430706; v1: {:18.16}; ",v1);
+//! //=============================================================================
+//! // Finally deallocate the memory by transferring the raw pointers back to RUST
+//! // i.e. Vec::from_raw_parts();
+//! //=============================================================================
+//! cint_data.final_c2r();
 //! ```
+
 #![allow(unused)]
 use std::os::raw::c_int;
-//use std::os::raw::c_double;
-//use std::ffi::c_void;
-use std::ptr;
 use std::mem::ManuallyDrop;
 
 mod cint;
