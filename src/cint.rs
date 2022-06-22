@@ -18,6 +18,7 @@ pub struct CINTOpt {
 }
 #[link(name="cint")]
 extern "C" {
+    pub fn CINTgto_norm(n: ::std::os::raw::c_int, a: f64) -> f64;
     pub fn CINTcgto_cart(
         bas_id: ::std::os::raw::c_int,
         bas: *const ::std::os::raw::c_int,
@@ -62,6 +63,62 @@ extern "C" {
         nbas: ::std::os::raw::c_int,
         env: *mut f64,
     );
+    pub fn cint3c2e_optimizer(
+        opt: *mut *mut CINTOpt,
+        atm: *mut ::std::os::raw::c_int,
+        natm: ::std::os::raw::c_int,
+        bas: *mut ::std::os::raw::c_int,
+        nbas: ::std::os::raw::c_int,
+        env: *mut f64,
+    );
+    pub fn cint3c2e_cart(
+        opijkl: *mut f64,
+        shls: *mut ::std::os::raw::c_int,
+        atm: *mut ::std::os::raw::c_int,
+        natm: ::std::os::raw::c_int,
+        bas: *mut ::std::os::raw::c_int,
+        nbas: ::std::os::raw::c_int,
+        env: *mut f64,
+        opt: *mut CINTOpt,
+    ) -> ::std::os::raw::c_int;
+    pub fn cint3c2e_sph(
+        opijkl: *mut f64,
+        shls: *mut ::std::os::raw::c_int,
+        atm: *mut ::std::os::raw::c_int,
+        natm: ::std::os::raw::c_int,
+        bas: *mut ::std::os::raw::c_int,
+        nbas: ::std::os::raw::c_int,
+        env: *mut f64,
+        opt: *mut CINTOpt,
+    ) -> ::std::os::raw::c_int;
+    pub fn cint2c2e_optimizer(
+        opt: *mut *mut CINTOpt,
+        atm: *mut ::std::os::raw::c_int,
+        natm: ::std::os::raw::c_int,
+        bas: *mut ::std::os::raw::c_int,
+        nbas: ::std::os::raw::c_int,
+        env: *mut f64,
+    );
+    pub fn cint2c2e_cart(
+        opijkl: *mut f64,
+        shls: *mut ::std::os::raw::c_int,
+        atm: *mut ::std::os::raw::c_int,
+        natm: ::std::os::raw::c_int,
+        bas: *mut ::std::os::raw::c_int,
+        nbas: ::std::os::raw::c_int,
+        env: *mut f64,
+        opt: *mut CINTOpt,
+    ) -> ::std::os::raw::c_int;
+    pub fn cint2c2e_sph(
+        opijkl: *mut f64,
+        shls: *mut ::std::os::raw::c_int,
+        atm: *mut ::std::os::raw::c_int,
+        natm: ::std::os::raw::c_int,
+        bas: *mut ::std::os::raw::c_int,
+        nbas: ::std::os::raw::c_int,
+        env: *mut f64,
+        opt: *mut CINTOpt,
+    ) -> ::std::os::raw::c_int;
     pub fn cint2e(
         opijkl: *mut f64,
         shls: *mut ::std::os::raw::c_int,
