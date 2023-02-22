@@ -118,13 +118,13 @@ pub enum IJOPT {
 
 #[derive(Clone)]
 pub struct CINTR2CDATA {
-    c_atm: (*mut i32, usize, usize),
-    c_bas: (*mut i32, usize, usize),
-    c_env: (*mut f64, usize, usize),
+    c_atm: (*const i32, usize, usize),
+    c_bas: (*const i32, usize, usize),
+    c_env: (*const f64, usize, usize),
     c_nbas: c_int,
     c_natm: c_int,
     c_opt: (*mut CINTOpt, usize, usize),
-    c_ao_loc: (*mut i32, usize,usize),
+    c_ao_loc: (*const i32, usize,usize),
     cint_type: CintType,
 }
 
@@ -132,10 +132,10 @@ impl CINTR2CDATA {
     /// create a new, empty CINTR2CDATA.
     pub fn new() -> CINTR2CDATA {
         CINTR2CDATA { 
-            c_atm: (unsafe {std::ptr::null::<i32>() as *mut i32}, 0,0),
-            c_bas: (unsafe {std::ptr::null::<i32>() as *mut i32}, 0,0),
-            c_env: (unsafe {std::ptr::null::<f64>() as *mut f64}, 0,0),
-            c_ao_loc: (unsafe {std::ptr::null::<i32>() as *mut i32}, 0,0),
+            c_atm: (unsafe {std::ptr::null::<i32>() as *const i32}, 0,0),
+            c_bas: (unsafe {std::ptr::null::<i32>() as *const i32}, 0,0),
+            c_env: (unsafe {std::ptr::null::<f64>() as *const f64}, 0,0),
+            c_ao_loc: (unsafe {std::ptr::null::<i32>() as *const i32}, 0,0),
             c_opt: (unsafe {std::ptr::null::<CINTOpt>() as *mut CINTOpt}, 0,0),
             c_nbas: 0 as c_int,
             c_natm: 0 as c_int,
@@ -149,12 +149,12 @@ impl CINTR2CDATA {
     pub fn initial_r2c(&mut self, 
                     atm: &Vec<Vec<i32>>, natm:i32, 
                     bas: &Vec<Vec<i32>>, nbas:i32, 
-                    mut env: Vec<f64>) {
+                    env: &Vec<f64>) {
         unsafe {
-            let r_atm = Vec::from_raw_parts(self.c_atm.0,self.c_atm.1,self.c_atm.2);
-            let r_bas = Vec::from_raw_parts(self.c_bas.0,self.c_bas.1,self.c_bas.2);
-            let r_env = Vec::from_raw_parts(self.c_env.0,self.c_env.1,self.c_env.2);
-            let r_ao_loc = Vec::from_raw_parts(self.c_ao_loc.0,self.c_ao_loc.1,self.c_ao_loc.2);
+            let r_atm = Vec::from_raw_parts(self.c_atm.0 as *mut i32,self.c_atm.1,self.c_atm.2);
+            let r_bas = Vec::from_raw_parts(self.c_bas.0 as *mut i32,self.c_bas.1,self.c_bas.2);
+            let r_env = Vec::from_raw_parts(self.c_env.0 as *mut f64,self.c_env.1,self.c_env.2);
+            let r_ao_loc = Vec::from_raw_parts(self.c_ao_loc.0 as *mut i32,self.c_ao_loc.1,self.c_ao_loc.2);
         }
 
         let dim = bas.iter().map(|ibas| {match self.cint_type {
@@ -167,37 +167,38 @@ impl CINTR2CDATA {
 
         ao_loc.shrink_to_fit();
         let mut ao_loc = ManuallyDrop::new(ao_loc);
-        self.c_ao_loc = (ao_loc.as_mut_ptr(), ao_loc.len(), ao_loc.capacity());
+        //self.c_ao_loc = (ao_loc.as_mut_ptr(), ao_loc.len(), ao_loc.capacity());
+        self.c_ao_loc = (ao_loc.as_ptr(), ao_loc.len(), ao_loc.capacity());
 
-        env.shrink_to_fit();
-        let mut env = ManuallyDrop::new(env);
-        self.c_env = (env.as_mut_ptr(), env.len(), env.capacity());
+        let mut env_f= env.clone();
+        env_f.shrink_to_fit();
+        let mut env_f = ManuallyDrop::new(env_f);
+        self.c_env = (env_f.as_ptr(), env_f.len(), env_f.capacity());
 
         let mut bas_f= bas.clone().into_iter().flatten().collect::<Vec<i32>>();
         bas_f.shrink_to_fit();
         let mut bas_f = ManuallyDrop::new(bas_f);
-        self.c_bas = (bas_f.as_mut_ptr(), bas_f.len(), bas_f.capacity());
+        self.c_bas = (bas_f.as_ptr(), bas_f.len(), bas_f.capacity());
 
         let mut atm_f = atm.clone().into_iter().flatten().collect::<Vec<i32>>();
         atm_f.shrink_to_fit();
         let mut atm_f = ManuallyDrop::new(atm_f);
-        self.c_atm = (atm_f.as_mut_ptr(), atm_f.len(), atm_f.capacity());
+        self.c_atm = (atm_f.as_ptr(), atm_f.len(), atm_f.capacity());
 
         self.c_natm = natm as c_int;
         self.c_nbas = nbas as c_int;
 
         self.c_opt = (unsafe {std::ptr::null::<CINTOpt>() as *mut CINTOpt}, 0,0);
     }
-    pub fn final_c2r(&mut self) -> Vec<f64> {
+    pub fn final_c2r(&mut self) {
         ///```println!("Clean the unsafe data and transfer the ownership of the raw pointers in CINTR2CDATA to Rust");```
-        let r_env: Vec<f64> = vec![];
         unsafe {
-            let r_atm = Vec::from_raw_parts(self.c_atm.0,self.c_atm.1,self.c_atm.2);
-            let r_bas = Vec::from_raw_parts(self.c_bas.0,self.c_bas.1,self.c_bas.2);
-            let r_env = Vec::from_raw_parts(self.c_env.0,self.c_env.1,self.c_env.2);
+            let r_atm = Vec::from_raw_parts(self.c_atm.0 as *mut i32,self.c_atm.1,self.c_atm.2);
+            let r_bas = Vec::from_raw_parts(self.c_bas.0 as *mut i32,self.c_bas.1,self.c_bas.2);
+            let r_env = Vec::from_raw_parts(self.c_env.0 as *mut f64,self.c_env.1,self.c_env.2);
         }
         self.cint_del_optimizer_rust();
-        r_env
+        //r_env
     }
     pub fn cint_del_optimizer_rust(&mut self) {
         unsafe{
