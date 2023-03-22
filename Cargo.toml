@@ -1,5 +1,5 @@
 [package]
-name = "rust_libcint"
+name = "rest_libcint"
 version = "0.1.1"
 authors = ["Igor Ying Zhang <igor_zhangying@fudan.edu.cn>"]
 edition = "2021"
