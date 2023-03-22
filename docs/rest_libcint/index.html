@@ -1,0 +1,89 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="rust-libcint"><meta name="keywords" content="rust, rustlang, rust-lang, rest_libcint"><title>rest_libcint - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../normalize.css"><link rel="stylesheet" href="../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../ayu.css" disabled><link rel="stylesheet" href="../dark.css" disabled><link rel="stylesheet" href="../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../storage.js"></script><script defer src="../crates.js"></script><script defer src="../main.js"></script><noscript><link rel="stylesheet" href="../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../favicon.svg"></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../rest_libcint/index.html"><div class="logo-container"><img class="rust-logo" src="../rust-logo.svg" alt="logo"></div></a><h2></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../rest_libcint/index.html"><div class="logo-container"><img class="rust-logo" src="../rust-logo.svg" alt="logo"></div></a><h2 class="location"><a href="#">Crate rest_libcint</a></h2><div class="sidebar-elems"><ul class="block"><li class="version">Version 0.1.1</li><li><a id="all-types" href="all.html">All Items</a></li></ul><section><ul class="block"><li><a href="#structs">Structs</a></li><li><a href="#enums">Enums</a></li></ul></section></div></nav><main><div class="width-limiter"><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../wheel.svg"></a></div></form></nav><section id="main-content" class="content"><div class="main-heading"><h1 class="fqn">Crate <a class="mod" href="#">rest_libcint</a><button id="copy-path" onclick="copy_path(this)" title="Copy item path to clipboard"><img src="../clipboard.svg" width="19" height="18" alt="Copy item path"></button></h1><span class="out-of-band"><a class="srclink" href="../src/rest_libcint/lib.rs.html#1-462">source</a> · <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">[<span class="inner">&#x2212;</span>]</a></span></div><details class="rustdoc-toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><h2 id="rust-libcint"><a href="#rust-libcint">rust-libcint</a></h2>
+<p>The <code>rust-libcint</code> crate provides wrappers for libcint (C).</p>
+<p>In order to use the crate, the libcint should be installed with the outcome library <code>libcint.so</code> stored in a reachable path by users.</p>
+<p>Please visit <a href="https://github.com/sunqm/libcint">https://github.com/sunqm/libcint</a> for more details about the installation and the usage of libcint</p>
+<p>The <code>CINTR2CDATA</code> struct groups all necessary data for using <code>libcint</code>.
+Various kinds of analytical Gaussian-type orbital (GTO) integrals provided by <code>libcint</code> are then wrapped as the methods defined on the <code>CINTR2CDATA</code> struct.</p>
+<p>Currently, only four kinds of integrals are available for both spheric and Cartesian GTOs, including </p>
+<ol>
+<li>the one-electron kinetic integral (<code>CINTR2CDATA::cint_ijkin</code>),</li>
+<li>the one-electron nuclear attractive integral (<code>CINT2CDATA::cint_ijnuc</code>), </li>
+<li>the one-electron overlap integral (<code>CINTR2CDATA::cint_ijovlp</code>), </li>
+<li>the two-electron repulsive integral (<code>CINTR2CDATA::cint_ijkl</code>).
+The other kinds of integrals are not yet ready in the current version.</li>
+</ol>
+<p>The integrals:<code>Vec&lt;f64&gt;</code> produced by the CINTR2CDATA methods aformentioned are arranged in
+the convention of <code>column-major</code> matrices according to the definition by <code>libcint</code>. </p>
+<h2 id="examples"><a href="#examples">Examples</a></h2>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">//=============================================================================
+// Prepare `atm`, `bas` and `env` with the same data structures of those used by `libcint`.
+// Refer to &lt;https://github.com/sunqm/libcint/blob/master/doc/program_ref.pdf&gt; 
+// for the details of these data structures.
+//=============================================================================
+</span><span class="kw">let </span><span class="kw-2">mut </span>atm: Vec&lt;Vec&lt;i32&gt;&gt; = <span class="macro">vec!</span>[];
+atm.push(<span class="macro">vec!</span>[<span class="number">2</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>]);
+atm.push(<span class="macro">vec!</span>[<span class="number">4</span>,<span class="number">3</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>]);
+<span class="kw">let </span><span class="kw-2">mut </span>natm = atm.len() <span class="kw">as </span>i32;
+<span class="kw">let </span><span class="kw-2">mut </span>bas: Vec&lt;Vec&lt;i32&gt;&gt; = <span class="macro">vec!</span>[];
+bas.push(<span class="macro">vec!</span>[<span class="number">0</span>,<span class="number">1</span>,<span class="number">1</span>,<span class="number">1</span>,<span class="number">1</span>,<span class="number">6</span>,<span class="number">7</span>,<span class="number">0</span>]);
+bas.push(<span class="macro">vec!</span>[<span class="number">0</span>,<span class="number">2</span>,<span class="number">1</span>,<span class="number">1</span>,<span class="number">1</span>,<span class="number">8</span>,<span class="number">9</span>,<span class="number">0</span>]);
+<span class="kw">let </span><span class="kw-2">mut </span>nbas = bas.len() <span class="kw">as </span>i32;
+<span class="kw">let </span><span class="kw-2">mut </span>env: Vec&lt;f64&gt; = <span class="macro">vec!</span>[<span class="number">0.0</span>,<span class="number">0.0</span>,<span class="number">0.0</span>,<span class="number">0.7</span>,<span class="number">0.0</span>,<span class="number">0.0</span>,<span class="number">1.0</span>,<span class="number">1.0</span>,<span class="number">0.5</span>,<span class="number">1.0</span>];
+<span class="comment">//=============================================================================
+// Transfer `atm`, `bas`, and `env` to the raw pointers,
+// and organize them by the data structure of `CINTR2CDATA`.
+//=============================================================================
+</span><span class="kw">use </span>rust_libcint::{CINTR2CDATA,CintType};
+<span class="kw">let </span><span class="kw-2">mut </span>cint_data = CINTR2CDATA::new();
+cint_data.initial_r2c(<span class="kw-2">&amp;</span>atm,natm,<span class="kw-2">&amp;</span>bas,nbas,env);
+<span class="comment">//=============================================================================
+//The 2-electron repulsive integrals (ERIs) for spheric Gaussian-type orbitals
+//=============================================================================
+// The GTO functions considered here are spheric.
+// For Cartesian GTOs, replace `CintType::Spheric` by 
+//  `CintType::Cartesian` on the following line:
+</span>cint_data.set_cint_type(<span class="kw-2">&amp;</span>CintType::Spheric);
+cint_data.cint2e_optimizer_rust();
+<span class="kw">let </span>buf = cint_data.cint_ijkl(<span class="number">0</span>,<span class="number">1</span>,<span class="number">1</span>,<span class="number">0</span>);
+<span class="kw">let </span><span class="kw-2">mut </span>v1:f64=<span class="number">0.0</span>;
+<span class="kw-2">&amp;</span>buf.into_iter().for_each(|i| {v1 += i.abs()});
+<span class="macro">println!</span>(<span class="string">&quot;The reference data for cint2e ERIs: 0.5745411555937561; v1: {:18.16}; &quot;</span>,v1);
+<span class="comment">//=============================================================================
+//The one-electron overlap integrals for spheric Gaussian-type orbitals
+//=============================================================================
+</span>cint_data.cint_del_optimizer_rust();
+<span class="comment">// The GTO functions considered here are spheric
+</span>cint_data.set_cint_type(<span class="kw-2">&amp;</span>CintType::Spheric);
+cint_data.cint1e_ovlp_optimizer_rust();
+<span class="kw">let </span>buf = cint_data.cint_ijovlp(<span class="number">0</span>,<span class="number">1</span>);
+<span class="kw">let </span><span class="kw-2">mut </span>v1:f64=<span class="number">0.0</span>;
+<span class="kw-2">&amp;</span>buf.into_iter().for_each(|i| {v1 += i.abs()});
+<span class="macro">println!</span>(<span class="string">&quot;The reference data for cint1e_ovlp: 0.7096366827378776; v1: {:18.16}; &quot;</span>,v1);
+<span class="comment">//=============================================================================
+//The one-electron kinetic integrals for Cartesian Gaussian-type orbitals
+//=============================================================================
+</span>cint_data.cint_del_optimizer_rust();
+<span class="comment">// The GTO functions considered here are Cartesian
+</span>cint_data.set_cint_type(<span class="kw-2">&amp;</span>CintType::Cartesian);
+cint_data.cint1e_kin_optimizer_rust();
+<span class="kw">let </span>buf = cint_data.cint_ijkin(<span class="number">0</span>,<span class="number">1</span>);
+<span class="kw">let </span><span class="kw-2">mut </span>v1:f64=<span class="number">0.0</span>;
+<span class="kw-2">&amp;</span>buf.into_iter().for_each(|i| {v1 += i.abs()});
+<span class="macro">println!</span>(<span class="string">&quot;The reference data for cint1e_kin : 1.5780816190296618; v1: {:18.16}; &quot;</span>,v1);
+<span class="comment">//=============================================================================
+//The one-electron nuclear attraction integrals for Cartesian Gaussian-type orbitals
+//=============================================================================
+</span>cint_data.cint_del_optimizer_rust();
+<span class="comment">// The GTO functions considered here are Cartesian
+</span>cint_data.set_cint_type(<span class="kw-2">&amp;</span>CintType::Cartesian);
+cint_data.cint1e_nuc_optimizer_rust();
+<span class="kw">let </span>buf = cint_data.cint_ijnuc(<span class="number">0</span>,<span class="number">1</span>);
+<span class="kw">let </span><span class="kw-2">mut </span>v1:f64=<span class="number">0.0</span>;
+<span class="kw-2">&amp;</span>buf.into_iter().for_each(|i| {v1 += i.abs()});
+<span class="macro">println!</span>(<span class="string">&quot;The reference data for cint1e_nuc : 4.0007622494430706; v1: {:18.16}; &quot;</span>,v1);
+<span class="comment">//=============================================================================
+// Finally deallocate the memory by transferring the raw pointers back to RUST
+// i.e. Vec::from_raw_parts();
+//=============================================================================
+</span>cint_data.final_c2r();</code></pre></div>
+</div></details><h2 id="structs" class="small-section-header"><a href="#structs">Structs</a></h2><div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.CINTR2CDATA.html" title="rest_libcint::CINTR2CDATA struct">CINTR2CDATA</a></div></div></div><h2 id="enums" class="small-section-header"><a href="#enums">Enums</a></h2><div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="enum" href="enum.CintType.html" title="rest_libcint::CintType enum">CintType</a></div></div><div class="item-row"><div class="item-left module-item"><a class="enum" href="enum.IJOPT.html" title="rest_libcint::IJOPT enum">IJOPT</a></div></div></div></section></div></main><div id="rustdoc-vars" data-root-path="../" data-current-crate="rest_libcint" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0 (69f9c33d7 2022-12-12)" ></div></body></html>
