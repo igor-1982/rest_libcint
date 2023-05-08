@@ -116,6 +116,13 @@ pub enum IJOPT {
     Nuclear,
 }
 
+pub enum IJIPOPT {
+    IPOvlp,
+    IPKin,
+    IPNuc,
+    IPRInv
+}
+
 #[derive(Clone)]
 pub struct CINTR2CDATA {
     c_atm: (*const i32, usize, usize),
@@ -263,6 +270,42 @@ impl CINTR2CDATA {
                                        self.c_atm.0, self.c_natm, 
                                        self.c_bas.0, self.c_nbas, 
                                        self.c_env.0);
+        }
+    }
+    pub fn int1e_ipovlp_optimizer_rust(&mut self){
+        self.cint_del_optimizer_rust();
+        unsafe {
+            cint::int1e_ipovlp_optimizer(&mut self.c_opt.0, 
+                                        self.c_atm.0, self.c_natm, 
+                                        self.c_bas.0, self.c_nbas, 
+                                        self.c_env.0)
+        }
+    }
+    pub fn int1e_ipkin_optimizer_rust(&mut self){
+        self.cint_del_optimizer_rust();
+        unsafe {
+            cint::int1e_ipkin_optimizer(&mut self.c_opt.0, 
+                                        self.c_atm.0, self.c_natm, 
+                                        self.c_bas.0, self.c_nbas, 
+                                        self.c_env.0)
+        }
+    }
+    pub fn int1e_ipnuc_optimizer_rust(&mut self){
+        self.cint_del_optimizer_rust();
+        unsafe {
+            cint::int1e_ipnuc_optimizer(&mut self.c_opt.0, 
+                                        self.c_atm.0, self.c_natm, 
+                                        self.c_bas.0, self.c_nbas, 
+                                        self.c_env.0)
+        }
+    }
+    pub fn int1e_iprinv_optimizer_rust(&mut self){
+        self.cint_del_optimizer_rust();
+        unsafe {
+            cint::int1e_iprinv_optimizer(&mut self.c_opt.0, 
+                                        self.c_atm.0, self.c_natm, 
+                                        self.c_bas.0, self.c_nbas, 
+                                        self.c_env.0)
         }
     }
     pub fn cint_cgto_rust(&self, index: i32) -> i32 {
@@ -456,6 +499,111 @@ impl CINTR2CDATA {
             };
             let shls = Vec::from_raw_parts(c_shls, shls_len, shls_cap);
             new_buf = Vec::from_raw_parts(c_buf, buf_len, buf_cap);
+        }
+        new_buf
+    }
+
+    pub fn cint_ip_ij(&mut self, i:i32,j:i32,op_name: &String) -> Vec<f64> {
+        // for 1e integrals: ipovlp
+
+        let op_type = if op_name.to_lowercase() == String::from("ipovlp") {
+            IJIPOPT::IPOvlp
+        } else if op_name.to_lowercase() == String::from("ipkin") {
+            IJIPOPT::IPKin
+        } else if op_name.to_lowercase() == String::from("ipnuc") {
+            IJIPOPT::IPNuc
+        } else if op_name.to_lowercase() == String::from("iprinv") {
+            IJIPOPT::IPRInv
+        } else {
+            panic!("Error:: Unknown operator for GTO-ij-ip integrals {}", op_name)
+        };
+        let mut di: i32 = self.cint_cgto_rust(i);
+        let mut dj: i32 = self.cint_cgto_rust(j);
+    
+        let mut shls: Vec<c_int> = vec![i as c_int,j as c_int];
+        //shls.shrink_to_fit();
+        let mut shls = ManuallyDrop::new(shls);
+        let (c_shls,shls_len,shls_cap) = (shls.as_mut_ptr() as *mut c_int,shls.len(),shls.capacity());
+    
+        let mut buf: Vec<f64> = [0.0f64].repeat((3*di*dj) as usize);
+        //buf.shrink_to_fit();
+        let mut buf = ManuallyDrop::new(buf);
+        let (c_buf, buf_len, buf_cap) = (buf.as_mut_ptr() as *mut f64, buf.len(), buf.capacity());
+    
+        let mut new_buf:Vec<f64>;
+        unsafe {
+            match op_type {
+                IJIPOPT::IPOvlp => {
+                    match self.cint_type {
+                        CintType::Spheric => cint::cint1e_ipovlp_sph(
+                                      c_buf, c_shls,
+                                        self.c_atm.0, self.c_natm,
+                                        self.c_bas.0,self.c_nbas,
+                                        self.c_env.0,
+                                        self.c_opt.0),
+                        CintType::Cartesian => cint::cint1e_ipovlp_cart(
+                                      c_buf, c_shls,
+                                        self.c_atm.0, self.c_natm,
+                                        self.c_bas.0,self.c_nbas,
+                                        self.c_env.0,
+                                        self.c_opt.0),
+                    }
+                },
+                IJIPOPT::IPKin => {
+                    match self.cint_type {
+                        CintType::Spheric => cint::cint1e_ipkin_sph(
+                                      c_buf, c_shls,
+                                        self.c_atm.0, self.c_natm,
+                                        self.c_bas.0,self.c_nbas,
+                                        self.c_env.0,
+                                        self.c_opt.0),
+                        CintType::Cartesian => cint::cint1e_ipkin_cart(
+                                      c_buf, c_shls,
+                                        self.c_atm.0, self.c_natm,
+                                        self.c_bas.0,self.c_nbas,
+                                        self.c_env.0,
+                                        self.c_opt.0),
+                    }
+                },
+                IJIPOPT::IPNuc => {
+                    match self.cint_type {
+                        CintType::Spheric => cint::cint1e_ipnuc_sph(
+                                      c_buf, c_shls,
+                                        self.c_atm.0, self.c_natm,
+                                        self.c_bas.0,self.c_nbas,
+                                        self.c_env.0,
+                                        self.c_opt.0),
+                        CintType::Cartesian => cint::cint1e_ipnuc_cart(
+                                      c_buf, c_shls,
+                                        self.c_atm.0, self.c_natm,
+                                        self.c_bas.0,self.c_nbas,
+                                        self.c_env.0,
+                                        self.c_opt.0),
+                    }
+                },
+                IJIPOPT::IPRInv => {
+                    match self.cint_type {
+                        CintType::Spheric => cint::cint1e_iprinv_sph(
+                                      c_buf, c_shls,
+                                        self.c_atm.0, self.c_natm,
+                                        self.c_bas.0,self.c_nbas,
+                                        self.c_env.0,
+                                        self.c_opt.0),
+                        CintType::Cartesian => cint::cint1e_iprinv_cart(
+                                      c_buf, c_shls,
+                                        self.c_atm.0, self.c_natm,
+                                        self.c_bas.0,self.c_nbas,
+                                        self.c_env.0,
+                                        self.c_opt.0),
+                    }
+                }
+            };
+            //let shls = Vec::from_raw_parts(c_shls, shls_len, shls_cap);
+            new_buf = Vec::from_raw_parts(c_buf, buf_len, buf_cap);
+            
+            //println!("i={},j={},di={},dj={}", i,j,di,dj);
+            //println!("new_buf={:?}", new_buf);
+            //println!("new_buf_len={}", new_buf.len());
         }
         new_buf
     }
