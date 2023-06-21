@@ -123,6 +123,11 @@ pub enum IJIPOPT {
     IPRInv
 }
 
+pub enum IP3C2E {
+    IP1,
+    IP2,
+}
+
 #[derive(Clone)]
 pub struct CINTR2CDATA {
     c_atm: (*const i32, usize, usize),
@@ -222,11 +227,39 @@ impl CINTR2CDATA {
                                        self.c_env.0);
         }
     }
+    pub fn cint2c2e_ip1_optimizer_rust(&mut self){
+        self.cint_del_optimizer_rust();
+        //self.cint_init_2e_optimizer_rust();
+        unsafe {
+            cint::cint2c2e_ip1_optimizer(&mut self.c_opt.0, 
+                                       self.c_atm.0, self.c_natm, 
+                                       self.c_bas.0, self.c_nbas, 
+                                       self.c_env.0);
+        }
+    }
     pub fn cint3c2e_optimizer_rust(&mut self){
         self.cint_del_optimizer_rust();
         //self.cint_init_2e_optimizer_rust();
         unsafe {
             cint::cint3c2e_optimizer(&mut self.c_opt.0, 
+                                       self.c_atm.0, self.c_natm, 
+                                       self.c_bas.0, self.c_nbas, 
+                                       self.c_env.0);
+        }
+    }
+    pub fn cint3c2e_ip1_optimizer_rust(&mut self){
+        self.cint_del_optimizer_rust();
+        unsafe {
+            cint::int3c2e_ip1_optimizer(&mut self.c_opt.0, 
+                                       self.c_atm.0, self.c_natm, 
+                                       self.c_bas.0, self.c_nbas, 
+                                       self.c_env.0);
+        }
+    }
+    pub fn cint3c2e_ip2_optimizer_rust(&mut self){
+        self.cint_del_optimizer_rust();
+        unsafe {
+            cint::int3c2e_ip2_optimizer(&mut self.c_opt.0, 
                                        self.c_atm.0, self.c_natm, 
                                        self.c_bas.0, self.c_nbas, 
                                        self.c_env.0);
@@ -336,6 +369,35 @@ impl CINTR2CDATA {
                                                     self.c_env.0,
                                                     self.c_opt.0),
                 CintType::Cartesian => cint::cint2c2e_cart(c_buf, c_shls,
+                                                    self.c_atm.0, self.c_natm,
+                                                    self.c_bas.0,self.c_nbas,
+                                                    self.c_env.0,
+                                                    self.c_opt.0),
+            };
+            //println!("debug 1 {}", &c_buf.read());
+            //let shls = Vec::from_raw_parts(c_shls, shls_len, shls_cap);
+            new_buf = Vec::from_raw_parts(c_buf, buf_len, buf_cap);
+        }
+       new_buf
+    }
+    pub fn cint_ip_2c2e(&mut self, i:i32,j:i32) -> Vec<f64> {
+        let mut di = self.cint_cgto_rust(i);
+        let mut dj = self.cint_cgto_rust(j);
+        let mut shls: Vec<c_int> = vec![i as c_int,j as c_int];
+        let mut shls = ManuallyDrop::new(shls);
+        let (c_shls,shls_len,shls_cap) = (shls.as_mut_ptr() as *mut c_int,shls.len(),shls.capacity());
+        let mut buf: Vec<f64> = vec![0.0;(di*dj) as usize];
+        let mut buf = ManuallyDrop::new(buf);
+        let (c_buf, buf_len, buf_cap) = (buf.as_mut_ptr() as *mut f64, buf.len(), buf.capacity());
+        let mut new_buf:Vec<f64>;
+        unsafe {
+            match self.cint_type {
+                CintType::Spheric => cint::cint2c2e_ip1_sph(c_buf, c_shls,
+                                                    self.c_atm.0, self.c_natm,
+                                                    self.c_bas.0,self.c_nbas,
+                                                    self.c_env.0,
+                                                    self.c_opt.0),
+                CintType::Cartesian => cint::cint2c2e_ip1_cart(c_buf, c_shls,
                                                     self.c_atm.0, self.c_natm,
                                                     self.c_bas.0,self.c_nbas,
                                                     self.c_env.0,
@@ -607,7 +669,65 @@ impl CINTR2CDATA {
         }
         new_buf
     }
+
+    pub fn cint_ip_3c2e(&mut self, i:i32,j:i32,k:i32,op_name: &String) -> Vec<f64> {
+        let op_type = if op_name.to_lowercase() == String::from("ip1") {
+            IP3C2E::IP1
+        } else if op_name.to_lowercase() == String::from("ip2") {
+            IP3C2E::IP2
+        } else {
+            panic!("Error:: Unknown operator for GTO-3c2e-ip integrals {}", op_name)
+        };
+
+        let mut di = self.cint_cgto_rust(i);
+        let mut dj = self.cint_cgto_rust(j);
+        let mut dk = self.cint_cgto_rust(k);
+        let mut shls: Vec<c_int> = vec![i as c_int,j as c_int,k as c_int];
+        let mut shls = ManuallyDrop::new(shls);
+        let (c_shls,shls_len,shls_cap) = (shls.as_mut_ptr() as *mut c_int,shls.len(),shls.capacity());
+        let mut buf: Vec<f64> = vec![0.0;(di*dj*dk) as usize];
+        let mut buf = ManuallyDrop::new(buf);
+        let (c_buf, buf_len, buf_cap) = (buf.as_mut_ptr() as *mut f64, buf.len(), buf.capacity());
+        let mut new_buf:Vec<f64>;
+        unsafe {
+            match op_type { 
+                IP3C2E::IP1 => {
+                    match self.cint_type {
+                        CintType::Spheric => cint::int3c2e_ip1_sph(c_buf, c_shls,
+                                                            self.c_atm.0, self.c_natm,
+                                                            self.c_bas.0,self.c_nbas,
+                                                            self.c_env.0,
+                                                            self.c_opt.0),
+                        CintType::Cartesian => cint::int3c2e_ip1_cart(c_buf, c_shls,
+                                                            self.c_atm.0, self.c_natm,
+                                                            self.c_bas.0,self.c_nbas,
+                                                            self.c_env.0,
+                                                            self.c_opt.0),
+                    }},
+                IP3C2E::IP2 => {
+                    match self.cint_type {
+                        CintType::Spheric => cint::int3c2e_ip2_sph(c_buf, c_shls,
+                                                            self.c_atm.0, self.c_natm,
+                                                            self.c_bas.0,self.c_nbas,
+                                                            self.c_env.0,
+                                                            self.c_opt.0),
+                        CintType::Cartesian => cint::int3c2e_ip2_cart(c_buf, c_shls,
+                                                            self.c_atm.0, self.c_natm,
+                                                            self.c_bas.0,self.c_nbas,
+                                                            self.c_env.0,
+                                                            self.c_opt.0),
+                    }},
+            };
+            //println!("debug 1 {}", &c_buf.read());
+            //let shls = Vec::from_raw_parts(c_shls, shls_len, shls_cap);
+            new_buf = Vec::from_raw_parts(c_buf, buf_len, buf_cap);
+        }
+       new_buf
+    }
+
 }
+
+
 
 //pub fn cint2e_sph_rust(mut buf: Vec<f64>, mut shls: Vec<i32>, 
 //                   c_atm: & *mut c_int, c_natm:c_int, 
