@@ -386,7 +386,7 @@ impl CINTR2CDATA {
         let mut shls: Vec<c_int> = vec![i as c_int,j as c_int];
         let mut shls = ManuallyDrop::new(shls);
         let (c_shls,shls_len,shls_cap) = (shls.as_mut_ptr() as *mut c_int,shls.len(),shls.capacity());
-        let mut buf: Vec<f64> = vec![0.0;(di*dj) as usize];
+        let mut buf: Vec<f64> = vec![0.0;(di*dj*3) as usize];
         let mut buf = ManuallyDrop::new(buf);
         let (c_buf, buf_len, buf_cap) = (buf.as_mut_ptr() as *mut f64, buf.len(), buf.capacity());
         let mut new_buf:Vec<f64>;
@@ -682,10 +682,11 @@ impl CINTR2CDATA {
         let mut di = self.cint_cgto_rust(i);
         let mut dj = self.cint_cgto_rust(j);
         let mut dk = self.cint_cgto_rust(k);
+        println!("di,dj,dk = {} {} {}", di, dj, dk);
         let mut shls: Vec<c_int> = vec![i as c_int,j as c_int,k as c_int];
         let mut shls = ManuallyDrop::new(shls);
         let (c_shls,shls_len,shls_cap) = (shls.as_mut_ptr() as *mut c_int,shls.len(),shls.capacity());
-        let mut buf: Vec<f64> = vec![0.0;(di*dj*dk) as usize];
+        let mut buf: Vec<f64> = vec![0.0_f64].repeat((3*di*dj*dk) as usize);
         let mut buf = ManuallyDrop::new(buf);
         let (c_buf, buf_len, buf_cap) = (buf.as_mut_ptr() as *mut f64, buf.len(), buf.capacity());
         let mut new_buf:Vec<f64>;
