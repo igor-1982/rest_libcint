@@ -6,6 +6,9 @@ edition = "2021"
 description = "Provide wrappers for libcint (C)"
 license = "MIT OR Apache-2.0"
 
+[build_dependencies]
+dunce = "1.0.0"
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]

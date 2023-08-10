@@ -119,6 +119,17 @@ extern "C" {
         env: *const f64,
         opt: *const CINTOpt,
     ) -> ::std::os::raw::c_int;
+    // IGOR DEBUG
+    pub fn cint3c2e_ip1_sph(
+        opijkl: *mut f64,
+        shls: *const ::std::os::raw::c_int,
+        atm: *const ::std::os::raw::c_int,
+        natm: ::std::os::raw::c_int,
+        bas: *const ::std::os::raw::c_int,
+        nbas: ::std::os::raw::c_int,
+        env: *const f64,
+        opt: *const CINTOpt,
+    ) -> ::std::os::raw::c_int;
     pub fn int3c2e_ip2_optimizer(
         opt: *mut *mut CINTOpt,
         atm: *const ::std::os::raw::c_int,
@@ -374,6 +385,16 @@ extern "C" {
         nbas: ::std::os::raw::c_int,
         env: *const f64,
     );
+    //// IGOR DEBUG
+    //pub fn cint1e_ipnuc_optimizer(
+    //    //CINTOpt **opt, FINT *atm, FINT natm, FINT *bas, FINT nbas, double *env
+    //    opt: *mut *mut CINTOpt,
+    //    atm: *const ::std::os::raw::c_int,
+    //    natm: ::std::os::raw::c_int,
+    //    bas: *const ::std::os::raw::c_int,
+    //    nbas: ::std::os::raw::c_int,
+    //    env: *const f64,
+    //);
     pub fn cint1e_ipnuc_sph(
         //double *out, FINT *dims, FINT *shls,FINT *atm, FINT natm, FINT *bas, FINT nbas, double *env, CINTOpt *opt, double *cache
         opijkl: *mut f64,

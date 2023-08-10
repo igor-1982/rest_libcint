@@ -1,6 +1,6 @@
-//! # rust-libcint
+//! # rest_libcint
 //!
-//! The `rust-libcint` crate provides wrappers for libcint (C).
+//! The `rest_libcint` crate provides wrappers for libcint (C).
 //!
 //! In order to use the crate, the libcint should be installed with the outcome library `libcint.so` stored in a reachable path by users.
 //!
@@ -43,7 +43,7 @@
 //! //=============================================================================
 //! use rust_libcint::{CINTR2CDATA,CintType};
 //! let mut cint_data = CINTR2CDATA::new();
-//! cint_data.initial_r2c(&atm,natm,&bas,nbas,env);
+//! cint_data.initial_r2c(&atm,natm,&bas,nbas,&env);
 //! //=============================================================================
 //! //The 2-electron repulsive integrals (ERIs) for spheric Gaussian-type orbitals
 //! //=============================================================================
@@ -694,7 +694,7 @@ impl CINTR2CDATA {
             match op_type { 
                 IP3C2E::IP1 => {
                     match self.cint_type {
-                        CintType::Spheric => cint::int3c2e_ip1_sph(c_buf, c_shls,
+                        CintType::Spheric => cint::cint3c2e_ip1_sph(c_buf, c_shls,
                                                             self.c_atm.0, self.c_natm,
                                                             self.c_bas.0,self.c_nbas,
                                                             self.c_env.0,
@@ -775,3 +775,96 @@ impl CINTR2CDATA {
 //    }
 //    new_buf
 //}
+
+#[test]
+pub fn test_1() {
+    //=============================================================================
+    // Prepare `atm`, `bas` and `env` with the same data structures of those used by `libcint`.
+    // Refer to <https://github.com/sunqm/libcint/blob/master/doc/program_ref.pdf> 
+    // for the details of these data structures.
+    //=============================================================================
+    let mut atm: Vec<Vec<i32>> = vec![];
+    let mut bas: Vec<Vec<i32>> = vec![];
+    let mut env = vec![0.0;20];
+    let mut ptr_env = 20;
+    atm.push(vec![1,ptr_env,0,0,0,0]);
+    env.extend(vec![0.0,0.0,-0.8]);
+    ptr_env += 3;
+
+    atm.push(vec![1,ptr_env,0,0,0,0]);
+    env.extend(vec![0.0,0.0,0.8]);
+    ptr_env += 3;
+
+    // now for basis set 1
+    // H S
+    // exp  bas_1  bas_2
+    // 6.0    0.7    0.4
+    // 2.0    0.6    0.3
+    // 0.8    0.5    0.2
+    env.extend(vec![6.0,2.0,0.8]);
+    [6.0,2.0,0.8].into_iter().zip([0.7,0.6,0.5]).for_each(|(exp, coeff)| {
+        env.push(coeff*crate::CINTR2CDATA::gto_norm(0, exp))
+    });
+    [6.0,2.0,0.8].into_iter().zip([0.4,0.3,0.2]).for_each(|(exp, coeff)| {
+        env.push(coeff*crate::CINTR2CDATA::gto_norm(0, exp))
+    });
+    bas.push(
+        //   ATOM_OF, ANG_OF,NPRIM_OF, NCtr_OF, KAPPA_OF, PTR_EXP, PTR_COEFF
+        vec![      0,      0,       3,       2,        0, ptr_env,ptr_env+3,0]
+    );
+    ptr_env += 9;
+    // H P
+    // exp  bas_1
+    // 0.9    1.0
+    env.push(0.9);
+    env.push(1.0*crate::CINTR2CDATA::gto_norm(1,0.9));
+    bas.push(
+        //   ATOM_OF, ANG_OF,NPRIM_OF, NCtr_OF, KAPPA_OF, PTR_EXP, PTR_COEFF
+        vec![      0,      1,       1,       1,        0, ptr_env,ptr_env+1,0]
+    );
+    ptr_env += 2;
+
+    let mut bas_2 = bas.clone();
+    bas_2[0][0] = 1;
+    bas_2[1][0] = 1;
+    bas.extend(bas_2);
+
+    let mut natm = atm.len() as i32;
+    let mut nbas = bas.len() as i32;
+    println!("{:?}", &atm);
+    println!("{:?}", &bas);
+    println!("{:?}", &env);
+    //let mut env: Vec<f64> = vec![0.0,0.0,0.0,0.7,0.0,0.0,1.0,1.0,0.5,1.0];
+    //=============================================================================
+    // Transfer `atm`, `bas`, and `env` to the raw pointers,
+    // and organize them by the data structure of `CINTR2CDATA`.
+    //=============================================================================
+    use crate::{CINTR2CDATA,CintType};
+    let mut cint_data = CINTR2CDATA::new();
+    cint_data.initial_r2c(&atm,natm,&bas,nbas,&env);
+    cint_data.set_cint_type(&CintType::Spheric);
+    //=============================================================================
+    // for int1e_nuc
+    //=============================================================================
+    cint_data.cint1e_nuc_optimizer_rust();
+    let op = String::from("nuclear");
+    let buf = cint_data.cint_ij(0,1,&op);
+    println!("nuc: {:?}", &buf);
+    //=============================================================================
+    // for cint1e_ipnuc
+    //=============================================================================
+    cint_data.int1e_ipnuc_optimizer_rust();
+    let op = String::from("ipnuc");
+    let buf = cint_data.cint_ip_ij(0,1,&op);
+    println!("ipnuc: {:?}", &buf);
+    //cint_data.cint2e_optimizer_rust();
+    //=============================================================================
+    // for cint3c2e_ip
+    //=============================================================================
+    cint_data.cint3c2e_ip1_optimizer_rust();
+    let op = String::from("ip1");
+    let buf = cint_data.cint_ip_3c2e(0,1,1, &op);
+    println!("3c2e_ip1: {:?}", &buf);
+
+    cint_data.final_c2r();
+}
