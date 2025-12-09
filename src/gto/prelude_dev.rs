@@ -39,7 +39,7 @@ pub const SIMDD: usize = 8;
 /// n_\mathrm{cart}(l), n_\mathrm{grids})$ will usually be up to (4, 15, 56) or
 /// 26.3 KB, which fits in L1d cache (32 KB in most micro-architectures)
 /// together with other data.
-pub const BLKSIZE: usize = 56;
+pub const BLKSIZE: usize = 48;
 
 /// Number of SIMD blocks in a block.
 ///
