@@ -1,13 +1,13 @@
 #[cfg(test)]
 mod coverage_cint {
     use itertools::Itertools;
-    use num_complex::*;
+    use num::Complex;
     use rest_libcint::{prelude::*, CintType};
 
     #[test]
     fn cover_crafter() {
         let mut cint_data = initialize();
-        cint_data.set_cint_type(&CintType::Cartesian);
+        cint_data.set_cint_type(CintType::Cartesian);
         cint_data.integral_s1::<int3c2e>(None);
         cint_data.integral_spinor_s2ij::<int3c2e>(None);
     }

@@ -2,9 +2,10 @@ use crate::cint;
 use crate::cint_wrapper::*;
 use crate::utilities::*;
 use crate::{CintType, CINTR2CDATA};
+use core::ffi::c_int;
 use core::panic;
 use itertools::{Format, Itertools};
-use num_complex::*;
+use num::Complex;
 use rayon::prelude::*;
 use rayon::{current_thread_index, max_num_threads};
 use std::prelude::*;
@@ -41,7 +42,14 @@ impl CINTR2CDATA {
     {
         self.optimizer_destruct();
         unsafe {
-            T::optimizer(&mut self.c_opt, self.c_atm.as_ptr(), self.c_natm, self.c_bas.as_ptr(), self.c_nbas, self.c_env.as_ptr());
+            T::optimizer(
+                &mut self.c_opt,
+                self.atm.as_ptr() as _,
+                self.atm.len() as c_int,
+                self.bas.as_ptr() as _,
+                self.bas.len() as c_int,
+                self.env.as_ptr(),
+            );
         }
     }
 
@@ -61,8 +69,8 @@ impl CINTR2CDATA {
         let loc_nctr = NCTR_OF as usize;
         let loc_bas = BAS_SLOTS as usize;
         let id_bas = id_bas as usize;
-        let nctr = self.c_bas[id_bas * loc_bas + loc_nctr] as usize;
-        let l = self.c_bas[id_bas * loc_bas + loc_ang] as usize;
+        let nctr = self.bas[id_bas][loc_nctr] as usize;
+        let l = self.bas[id_bas][loc_ang] as usize;
         let nang = 2 * l + 1;
         return nctr * nang;
     }
@@ -79,8 +87,8 @@ impl CINTR2CDATA {
         let loc_nctr = NCTR_OF as usize;
         let loc_bas = BAS_SLOTS as usize;
         let id_bas = id_bas as usize;
-        let nctr = self.c_bas[id_bas * loc_bas + loc_nctr] as usize;
-        let l = self.c_bas[id_bas * loc_bas + loc_ang] as usize;
+        let nctr = self.bas[id_bas][loc_nctr] as usize;
+        let l = self.bas[id_bas][loc_ang] as usize;
         let nang = (l + 1) * (l + 2) / 2;
         return nctr * nang;
     }
@@ -92,9 +100,9 @@ impl CINTR2CDATA {
         let loc_kappa = KAPPA_OF as usize;
         let loc_bas = BAS_SLOTS as usize;
         let id_bas = id_bas as usize;
-        let nctr = self.c_bas[id_bas * loc_bas + loc_nctr] as usize;
-        let l = self.c_bas[id_bas * loc_bas + loc_ang] as usize;
-        let kappa = self.c_bas[id_bas * loc_bas + loc_kappa] as i32;
+        let nctr = self.bas[id_bas][loc_nctr] as usize;
+        let l = self.bas[id_bas][loc_ang] as usize;
+        let kappa = self.bas[id_bas][loc_kappa] as i32;
         if kappa == 0 {
             return nctr * (4 * l + 2);
         } else if kappa < 0 {
@@ -119,7 +127,7 @@ impl CINTR2CDATA {
     /// Location of atomic orbitals, for basis configuration of the current
     /// molecule.
     pub fn cgto_loc(&self) -> Vec<usize> {
-        let size_vec = (0..self.c_nbas).map(|idx| self.cgto_size(idx)).collect::<Vec<usize>>();
+        let size_vec = (0..self.bas.len()).map(|idx| self.cgto_size(idx as i32)).collect::<Vec<usize>>();
         let mut loc = vec![0; size_vec.len() + 1];
         for idx in (0..size_vec.len() as usize) {
             loc[idx + 1] = loc[idx] + size_vec[idx];
@@ -162,8 +170,8 @@ impl CINTR2CDATA {
             if shl_slice[1] < shl_slice[0] {
                 return Err(format!("in {shl_slice:?}, second number is smaller than first number"));
             }
-            if shl_slice[1] > self.c_nbas {
-                return Err(format!("in {:?}, number of shells exceeds {:}", shl_slice, self.c_nbas));
+            if shl_slice[1] > self.bas.len() as i32 {
+                return Err(format!("in {:?}, number of shells exceeds {:}", shl_slice, self.bas.len()));
             }
             if shl_slice[0] < 0 {
                 return Err(format!("in {shl_slice:?}, shell number should not be negative"));
@@ -265,7 +273,7 @@ impl CINTR2CDATA {
         T: Integrator,
     {
         let shls_min = shls_slice.iter().map(|x| x[0]).min().unwrap_or(0);
-        let shls_max = shls_slice.iter().map(|x| x[1]).max().unwrap_or(self.c_nbas);
+        let shls_max = shls_slice.iter().map(|x| x[1]).max().unwrap_or(self.bas.len() as c_int);
         let cache_size = (shls_min..shls_max)
             .into_iter()
             .map(|shl| {
@@ -276,11 +284,11 @@ impl CINTR2CDATA {
                             null_mut(),
                             null(),
                             shls.as_mut_ptr(),
-                            self.c_atm.as_ptr(),
-                            self.c_natm,
-                            self.c_bas.as_ptr(),
-                            self.c_nbas,
-                            self.c_env.as_ptr(),
+                            self.atm.as_ptr() as _,
+                            self.atm.len() as c_int,
+                            self.bas.as_ptr() as _,
+                            self.bas.len() as c_int,
+                            self.env.as_ptr(),
                             null(),
                             null_mut(),
                         ) as usize
@@ -290,11 +298,11 @@ impl CINTR2CDATA {
                             null_mut(),
                             null(),
                             shls.as_mut_ptr(),
-                            self.c_atm.as_ptr(),
-                            self.c_natm,
-                            self.c_bas.as_ptr(),
-                            self.c_nbas,
-                            self.c_env.as_ptr(),
+                            self.atm.as_ptr() as _,
+                            self.atm.len() as c_int,
+                            self.bas.as_ptr() as _,
+                            self.bas.len() as c_int,
+                            self.env.as_ptr(),
                             null(),
                             null_mut(),
                         ) as usize
@@ -304,11 +312,11 @@ impl CINTR2CDATA {
                             null_mut(),
                             null(),
                             shls.as_mut_ptr(),
-                            self.c_atm.as_ptr(),
-                            self.c_natm,
-                            self.c_bas.as_ptr(),
-                            self.c_nbas,
-                            self.c_env.as_ptr(),
+                            self.atm.as_ptr() as _,
+                            self.atm.len() as c_int,
+                            self.bas.as_ptr() as _,
+                            self.bas.len() as c_int,
+                            self.env.as_ptr(),
                             null(),
                             null_mut(),
                         ) as usize
@@ -372,11 +380,11 @@ impl CINTR2CDATA {
                     out.as_mut_ptr() as *mut f64,
                     shape_ptr,
                     shls.as_ptr(),
-                    self.c_atm.as_ptr(),
-                    self.c_natm,
-                    self.c_bas.as_ptr(),
-                    self.c_nbas,
-                    self.c_env.as_ptr(),
+                    self.atm.as_ptr() as _,
+                    self.atm.len() as c_int,
+                    self.bas.as_ptr() as _,
+                    self.bas.len() as c_int,
+                    self.env.as_ptr(),
                     self.c_opt,
                     cache_ptr,
                 )
@@ -386,11 +394,11 @@ impl CINTR2CDATA {
                     out.as_mut_ptr() as *mut f64,
                     shape_ptr,
                     shls.as_ptr(),
-                    self.c_atm.as_ptr(),
-                    self.c_natm,
-                    self.c_bas.as_ptr(),
-                    self.c_nbas,
-                    self.c_env.as_ptr(),
+                    self.atm.as_ptr() as _,
+                    self.atm.len() as c_int,
+                    self.bas.as_ptr() as _,
+                    self.bas.len() as c_int,
+                    self.env.as_ptr(),
                     self.c_opt,
                     cache_ptr,
                 )
@@ -400,11 +408,11 @@ impl CINTR2CDATA {
                     out.as_mut_ptr() as *mut cint::__BindgenComplex<f64>,
                     shape_ptr,
                     shls.as_ptr(),
-                    self.c_atm.as_ptr(),
-                    self.c_natm,
-                    self.c_bas.as_ptr(),
-                    self.c_nbas,
-                    self.c_env.as_ptr(),
+                    self.atm.as_ptr() as _,
+                    self.atm.len() as c_int,
+                    self.bas.as_ptr() as _,
+                    self.bas.len() as c_int,
+                    self.env.as_ptr(),
                     self.c_opt,
                     cache_ptr,
                 )
@@ -535,7 +543,7 @@ impl CINTR2CDATA {
         // specify shl_slices
         let shl_slices = match shl_slices {
             Some(shl_slices) => shl_slices,
-            None => &vec![[0, self.c_nbas]; T::n_center()],
+            None => &vec![[0, self.bas.len() as i32]; T::n_center()],
         };
         // specify and allocate output
         let mut out_shape = self.cgto_shape::<T>(&shl_slices);
@@ -565,9 +573,9 @@ impl CINTR2CDATA {
         T: Integrator,
     {
         let cint_type = self.cint_type;
-        self.set_cint_type(&CintType::Spinor);
+        self.set_cint_type(CintType::Spinor);
         let result = self.integral_s1_inner::<T, _>(shl_slices);
-        self.set_cint_type(&cint_type);
+        self.set_cint_type(cint_type);
         return result;
     }
 
@@ -740,7 +748,7 @@ impl CINTR2CDATA {
     {
         let shl_slices = match shl_slices {
             Some(shl_slices) => shl_slices,
-            None => &vec![[0, self.c_nbas]; T::n_center()],
+            None => &vec![[0, self.bas.len() as i32]; T::n_center()],
         };
         let mut out_shape = self.cgto_shape_s2ij::<T>(&shl_slices).unwrap();
         if T::n_comp() > 1 {
@@ -769,9 +777,9 @@ impl CINTR2CDATA {
     {
         eprintln!("`integral_spinor_s2ij` should generally not be called, since spinor may not show s2ij symmetry.");
         let cint_type = self.cint_type;
-        self.set_cint_type(&CintType::Spinor);
+        self.set_cint_type(CintType::Spinor);
         let result = self.integral_s2ij_inner::<T, _>(shl_slices);
-        self.set_cint_type(&cint_type);
+        self.set_cint_type(cint_type);
         return result;
     }
 }

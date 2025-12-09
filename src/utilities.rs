@@ -1,4 +1,4 @@
-use num_complex::*;
+use num::Complex;
 
 pub trait FF64: Sized + Send + Sync + Copy + Clone {
     fn zero() -> Self;

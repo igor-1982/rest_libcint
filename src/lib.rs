@@ -108,24 +108,38 @@ use core::panic;
 use itertools::Itertools;
 use std::collections::btree_map::Range;
 use std::process::exit;
-use std::{os::raw::c_int, ptr::null, ptr::null_mut};
 
 pub mod cecp;
 pub mod cecp_crafter;
 pub mod cecp_wrapper;
 pub mod cint;
+pub mod cint_change;
 pub mod cint_crafter;
+pub mod cint_prop;
 pub mod cint_wrapper;
+pub mod ffi;
 pub mod prelude;
+pub mod util;
+
 mod utilities;
 
+pub use CINTR2CDATA as CInt;
+
 use crate::cint::{CINTOpt, CINTdel_optimizer};
+use core::ffi::c_int;
+use core::ptr::{null, null_mut};
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum CintType {
     Spheric,
     Cartesian,
     Spinor,
+}
+
+impl Default for CintType {
+    fn default() -> Self {
+        CintType::Spheric
+    }
 }
 
 pub enum IJOPT {
@@ -149,59 +163,31 @@ pub enum IP3C2E {
 
 #[derive(Clone)]
 pub struct CINTR2CDATA {
+    pub atm: Vec<[c_int; 6]>,
+    pub bas: Vec<[c_int; 8]>,
+    pub ecpbas: Vec<[c_int; 8]>,
+    pub env: Vec<f64>,
+    pub cint_type: CintType,
     c_opt: *mut CINTOpt,
-    c_natm: i32,
-    c_nbas: i32,
-    c_necp: i32,
-    cint_type: CintType,
-    c_atm: Vec<i32>,
-    c_bas: Vec<i32>,
-    c_env: Vec<f64>,
-    c_ecp: Vec<i32>,
 }
 
 impl CINTR2CDATA {
     /// create a new, empty CINTR2CDATA.
     pub fn new() -> CINTR2CDATA {
         CINTR2CDATA {
-            c_opt: null_mut(),
-            c_natm: 0,
-            c_nbas: 0,
-            c_necp: 0,
+            atm: Vec::new(),
+            bas: Vec::new(),
+            ecpbas: Vec::new(),
+            env: Vec::new(),
             cint_type: CintType::Spheric,
-            c_atm: Vec::new(),
-            c_bas: Vec::new(),
-            c_env: Vec::new(),
-            c_ecp: Vec::new(),
+            c_opt: null_mut(),
         }
     }
 
-    pub fn set_common_origin(&mut self, comm_orig: &[f64]) {
-        self.c_env[PTR_COMMON_ORIG as usize..PTR_COMMON_ORIG as usize + 3].iter_mut().zip(comm_orig.iter()).for_each(|(a, b)| *a = *b);
-    }
-
-    pub fn get_common_origin(&self) -> [f64; 3] {
-        self.c_env[PTR_COMMON_ORIG as usize..PTR_COMMON_ORIG as usize + 3].try_into().unwrap()
-    }
-
-    pub fn set_rinv_origin(&mut self, comm_orig: &[f64]) {
-        self.c_env[PTR_RINV_ORIG as usize..PTR_RINV_ORIG as usize + 3].iter_mut().zip(comm_orig.iter()).for_each(|(a, b)| *a = *b);
-    }
-
-    pub fn get_rinv_origin(&self) -> [f64; 3] {
-        self.c_env[PTR_RINV_ORIG as usize..PTR_RINV_ORIG as usize + 3].try_into().unwrap()
-    }
-
-    pub fn set_cint_type(&mut self, ctype: &CintType) {
-        self.cint_type = *ctype;
-    }
-    ////
     pub fn initial_r2c(&mut self, atm: &Vec<Vec<i32>>, natm: i32, bas: &Vec<Vec<i32>>, nbas: i32, env: &Vec<f64>) {
-        self.c_atm = atm.clone().into_iter().flatten().collect::<Vec<i32>>();
-        self.c_bas = bas.clone().into_iter().flatten().collect::<Vec<i32>>();
-        self.c_env = env.clone();
-        self.c_natm = natm;
-        self.c_nbas = nbas;
+        self.atm = atm.iter().map(|x| x.clone().try_into().unwrap()).collect();
+        self.bas = bas.iter().map(|x| x.clone().try_into().unwrap()).collect();
+        self.env = env.clone();
         self.c_opt = null_mut();
     }
 
@@ -216,8 +202,7 @@ impl CINTR2CDATA {
         env: &Vec<f64>,
     ) {
         self.initial_r2c(atm, natm, bas, nbas, env);
-        self.c_ecp = ecp.clone().into_iter().flatten().collect::<Vec<i32>>();
-        self.c_necp = necp;
+        self.ecpbas = ecp.iter().map(|x| x.clone().try_into().unwrap()).collect();
     }
 
     pub fn final_c2r(&mut self) {
@@ -239,8 +224,8 @@ impl CINTR2CDATA {
         let mut dim: i32;
         unsafe {
             dim = match self.cint_type {
-                CintType::Spheric => cint::CINTcgto_spheric(index as c_int, self.c_bas.as_ptr()),
-                CintType::Cartesian => cint::CINTcgto_cart(index as c_int, self.c_bas.as_ptr()),
+                CintType::Spheric => cint::CINTcgto_spheric(index as c_int, self.bas.as_ptr() as _),
+                CintType::Cartesian => cint::CINTcgto_cart(index as c_int, self.bas.as_ptr() as _),
                 CintType::Spinor => panic!("Spinor GTOs are not yet supported"),
             };
         }
@@ -257,11 +242,11 @@ impl CINTR2CDATA {
                     buf.as_mut_ptr(),
                     null(),
                     shls.as_mut_ptr(),
-                    self.c_atm.as_ptr(),
-                    self.c_natm,
-                    self.c_bas.as_ptr(),
-                    self.c_nbas,
-                    self.c_env.as_ptr(),
+                    self.atm.as_ptr() as _,
+                    self.atm.len() as c_int,
+                    self.bas.as_ptr() as _,
+                    self.bas.len() as c_int,
+                    self.env.as_ptr(),
                     self.c_opt,
                     null_mut(),
                 ),
@@ -269,11 +254,11 @@ impl CINTR2CDATA {
                     buf.as_mut_ptr(),
                     null(),
                     shls.as_mut_ptr(),
-                    self.c_atm.as_ptr(),
-                    self.c_natm,
-                    self.c_bas.as_ptr(),
-                    self.c_nbas,
-                    self.c_env.as_ptr(),
+                    self.atm.as_ptr() as _,
+                    self.atm.len() as c_int,
+                    self.bas.as_ptr() as _,
+                    self.bas.len() as c_int,
+                    self.env.as_ptr(),
                     self.c_opt,
                     null_mut(),
                 ),
@@ -293,11 +278,11 @@ impl CINTR2CDATA {
                     buf.as_mut_ptr(),
                     null(),
                     shls.as_mut_ptr(),
-                    self.c_atm.as_ptr(),
-                    self.c_natm,
-                    self.c_bas.as_ptr(),
-                    self.c_nbas,
-                    self.c_env.as_ptr(),
+                    self.atm.as_ptr() as _,
+                    self.atm.len() as c_int,
+                    self.bas.as_ptr() as _,
+                    self.bas.len() as c_int,
+                    self.env.as_ptr(),
                     self.c_opt,
                     null_mut(),
                 ),
@@ -305,11 +290,11 @@ impl CINTR2CDATA {
                     buf.as_mut_ptr(),
                     null(),
                     shls.as_mut_ptr(),
-                    self.c_atm.as_ptr(),
-                    self.c_natm,
-                    self.c_bas.as_ptr(),
-                    self.c_nbas,
-                    self.c_env.as_ptr(),
+                    self.atm.as_ptr() as _,
+                    self.atm.len() as c_int,
+                    self.bas.as_ptr() as _,
+                    self.bas.len() as c_int,
+                    self.env.as_ptr(),
                     self.c_opt,
                     null_mut(),
                 ),
@@ -330,11 +315,11 @@ impl CINTR2CDATA {
                     buf.as_mut_ptr(),
                     null(),
                     shls.as_mut_ptr(),
-                    self.c_atm.as_ptr(),
-                    self.c_natm,
-                    self.c_bas.as_ptr(),
-                    self.c_nbas,
-                    self.c_env.as_ptr(),
+                    self.atm.as_ptr() as _,
+                    self.atm.len() as c_int,
+                    self.bas.as_ptr() as _,
+                    self.bas.len() as c_int,
+                    self.env.as_ptr(),
                     self.c_opt,
                     null_mut(),
                 ),
@@ -342,11 +327,11 @@ impl CINTR2CDATA {
                     buf.as_mut_ptr(),
                     null(),
                     shls.as_mut_ptr(),
-                    self.c_atm.as_ptr(),
-                    self.c_natm,
-                    self.c_bas.as_ptr(),
-                    self.c_nbas,
-                    self.c_env.as_ptr(),
+                    self.atm.as_ptr() as _,
+                    self.atm.len() as c_int,
+                    self.bas.as_ptr() as _,
+                    self.bas.len() as c_int,
+                    self.env.as_ptr(),
                     self.c_opt,
                     null_mut(),
                 ),
@@ -370,11 +355,11 @@ impl CINTR2CDATA {
                     buf.as_mut_ptr(),
                     null(),
                     shls.as_mut_ptr(),
-                    self.c_atm.as_ptr(),
-                    self.c_natm,
-                    self.c_bas.as_ptr(),
-                    self.c_nbas,
-                    self.c_env.as_ptr(),
+                    self.atm.as_ptr() as _,
+                    self.atm.len() as c_int,
+                    self.bas.as_ptr() as _,
+                    self.bas.len() as c_int,
+                    self.env.as_ptr(),
                     self.c_opt,
                     null_mut(),
                 ),
@@ -382,11 +367,11 @@ impl CINTR2CDATA {
                     buf.as_mut_ptr(),
                     null(),
                     shls.as_mut_ptr(),
-                    self.c_atm.as_ptr(),
-                    self.c_natm,
-                    self.c_bas.as_ptr(),
-                    self.c_nbas,
-                    self.c_env.as_ptr(),
+                    self.atm.as_ptr() as _,
+                    self.atm.len() as c_int,
+                    self.bas.as_ptr() as _,
+                    self.bas.len() as c_int,
+                    self.env.as_ptr(),
                     self.c_opt,
                     null_mut(),
                 ),
@@ -428,11 +413,11 @@ impl CINTR2CDATA {
                         buf.as_mut_ptr(),
                         null(),
                         shls.as_mut_ptr(),
-                        self.c_atm.as_ptr(),
-                        self.c_natm,
-                        self.c_bas.as_ptr(),
-                        self.c_nbas,
-                        self.c_env.as_ptr(),
+                        self.atm.as_ptr() as _,
+                        self.atm.len() as c_int,
+                        self.bas.as_ptr() as _,
+                        self.bas.len() as c_int,
+                        self.env.as_ptr(),
                         self.c_opt,
                         null_mut(),
                     ),
@@ -440,11 +425,11 @@ impl CINTR2CDATA {
                         buf.as_mut_ptr(),
                         null(),
                         shls.as_mut_ptr(),
-                        self.c_atm.as_ptr(),
-                        self.c_natm,
-                        self.c_bas.as_ptr(),
-                        self.c_nbas,
-                        self.c_env.as_ptr(),
+                        self.atm.as_ptr() as _,
+                        self.atm.len() as c_int,
+                        self.bas.as_ptr() as _,
+                        self.bas.len() as c_int,
+                        self.env.as_ptr(),
                         self.c_opt,
                         null_mut(),
                     ),
@@ -455,11 +440,11 @@ impl CINTR2CDATA {
                         buf.as_mut_ptr(),
                         null(),
                         shls.as_mut_ptr(),
-                        self.c_atm.as_ptr(),
-                        self.c_natm,
-                        self.c_bas.as_ptr(),
-                        self.c_nbas,
-                        self.c_env.as_ptr(),
+                        self.atm.as_ptr() as _,
+                        self.atm.len() as c_int,
+                        self.bas.as_ptr() as _,
+                        self.bas.len() as c_int,
+                        self.env.as_ptr(),
                         self.c_opt,
                         null_mut(),
                     ),
@@ -467,11 +452,11 @@ impl CINTR2CDATA {
                         buf.as_mut_ptr(),
                         null(),
                         shls.as_mut_ptr(),
-                        self.c_atm.as_ptr(),
-                        self.c_natm,
-                        self.c_bas.as_ptr(),
-                        self.c_nbas,
-                        self.c_env.as_ptr(),
+                        self.atm.as_ptr() as _,
+                        self.atm.len() as c_int,
+                        self.bas.as_ptr() as _,
+                        self.bas.len() as c_int,
+                        self.env.as_ptr(),
                         self.c_opt,
                         null_mut(),
                     ),
@@ -482,11 +467,11 @@ impl CINTR2CDATA {
                         buf.as_mut_ptr(),
                         null(),
                         shls.as_mut_ptr(),
-                        self.c_atm.as_ptr(),
-                        self.c_natm,
-                        self.c_bas.as_ptr(),
-                        self.c_nbas,
-                        self.c_env.as_ptr(),
+                        self.atm.as_ptr() as _,
+                        self.atm.len() as c_int,
+                        self.bas.as_ptr() as _,
+                        self.bas.len() as c_int,
+                        self.env.as_ptr(),
                         self.c_opt,
                         null_mut(),
                     ),
@@ -494,11 +479,11 @@ impl CINTR2CDATA {
                         buf.as_mut_ptr(),
                         null(),
                         shls.as_mut_ptr(),
-                        self.c_atm.as_ptr(),
-                        self.c_natm,
-                        self.c_bas.as_ptr(),
-                        self.c_nbas,
-                        self.c_env.as_ptr(),
+                        self.atm.as_ptr() as _,
+                        self.atm.len() as c_int,
+                        self.bas.as_ptr() as _,
+                        self.bas.len() as c_int,
+                        self.env.as_ptr(),
                         self.c_opt,
                         null_mut(),
                     ),
@@ -537,11 +522,11 @@ impl CINTR2CDATA {
                         buf.as_mut_ptr(),
                         null(),
                         shls.as_mut_ptr(),
-                        self.c_atm.as_ptr(),
-                        self.c_natm,
-                        self.c_bas.as_ptr(),
-                        self.c_nbas,
-                        self.c_env.as_ptr(),
+                        self.atm.as_ptr() as _,
+                        self.atm.len() as c_int,
+                        self.bas.as_ptr() as _,
+                        self.bas.len() as c_int,
+                        self.env.as_ptr(),
                         self.c_opt,
                         null_mut(),
                     ),
@@ -549,11 +534,11 @@ impl CINTR2CDATA {
                         buf.as_mut_ptr(),
                         null(),
                         shls.as_mut_ptr(),
-                        self.c_atm.as_ptr(),
-                        self.c_natm,
-                        self.c_bas.as_ptr(),
-                        self.c_nbas,
-                        self.c_env.as_ptr(),
+                        self.atm.as_ptr() as _,
+                        self.atm.len() as c_int,
+                        self.bas.as_ptr() as _,
+                        self.bas.len() as c_int,
+                        self.env.as_ptr(),
                         self.c_opt,
                         null_mut(),
                     ),
@@ -564,11 +549,11 @@ impl CINTR2CDATA {
                         buf.as_mut_ptr(),
                         null(),
                         shls.as_mut_ptr(),
-                        self.c_atm.as_ptr(),
-                        self.c_natm,
-                        self.c_bas.as_ptr(),
-                        self.c_nbas,
-                        self.c_env.as_ptr(),
+                        self.atm.as_ptr() as _,
+                        self.atm.len() as c_int,
+                        self.bas.as_ptr() as _,
+                        self.bas.len() as c_int,
+                        self.env.as_ptr(),
                         self.c_opt,
                         null_mut(),
                     ),
@@ -576,11 +561,11 @@ impl CINTR2CDATA {
                         buf.as_mut_ptr(),
                         null(),
                         shls.as_mut_ptr(),
-                        self.c_atm.as_ptr(),
-                        self.c_natm,
-                        self.c_bas.as_ptr(),
-                        self.c_nbas,
-                        self.c_env.as_ptr(),
+                        self.atm.as_ptr() as _,
+                        self.atm.len() as c_int,
+                        self.bas.as_ptr() as _,
+                        self.bas.len() as c_int,
+                        self.env.as_ptr(),
                         self.c_opt,
                         null_mut(),
                     ),
@@ -591,11 +576,11 @@ impl CINTR2CDATA {
                         buf.as_mut_ptr(),
                         null(),
                         shls.as_mut_ptr(),
-                        self.c_atm.as_ptr(),
-                        self.c_natm,
-                        self.c_bas.as_ptr(),
-                        self.c_nbas,
-                        self.c_env.as_ptr(),
+                        self.atm.as_ptr() as _,
+                        self.atm.len() as c_int,
+                        self.bas.as_ptr() as _,
+                        self.bas.len() as c_int,
+                        self.env.as_ptr(),
                         self.c_opt,
                         null_mut(),
                     ),
@@ -603,11 +588,11 @@ impl CINTR2CDATA {
                         buf.as_mut_ptr(),
                         null(),
                         shls.as_mut_ptr(),
-                        self.c_atm.as_ptr(),
-                        self.c_natm,
-                        self.c_bas.as_ptr(),
-                        self.c_nbas,
-                        self.c_env.as_ptr(),
+                        self.atm.as_ptr() as _,
+                        self.atm.len() as c_int,
+                        self.bas.as_ptr() as _,
+                        self.bas.len() as c_int,
+                        self.env.as_ptr(),
                         self.c_opt,
                         null_mut(),
                     ),
@@ -618,11 +603,11 @@ impl CINTR2CDATA {
                         buf.as_mut_ptr(),
                         null(),
                         shls.as_mut_ptr(),
-                        self.c_atm.as_ptr(),
-                        self.c_natm,
-                        self.c_bas.as_ptr(),
-                        self.c_nbas,
-                        self.c_env.as_ptr(),
+                        self.atm.as_ptr() as _,
+                        self.atm.len() as c_int,
+                        self.bas.as_ptr() as _,
+                        self.bas.len() as c_int,
+                        self.env.as_ptr(),
                         self.c_opt,
                         null_mut(),
                     ),
@@ -630,11 +615,11 @@ impl CINTR2CDATA {
                         buf.as_mut_ptr(),
                         null(),
                         shls.as_mut_ptr(),
-                        self.c_atm.as_ptr(),
-                        self.c_natm,
-                        self.c_bas.as_ptr(),
-                        self.c_nbas,
-                        self.c_env.as_ptr(),
+                        self.atm.as_ptr() as _,
+                        self.atm.len() as c_int,
+                        self.bas.as_ptr() as _,
+                        self.bas.len() as c_int,
+                        self.env.as_ptr(),
                         self.c_opt,
                         null_mut(),
                     ),
@@ -668,11 +653,11 @@ impl CINTR2CDATA {
                         buf.as_mut_ptr(),
                         null(),
                         shls.as_mut_ptr(),
-                        self.c_atm.as_ptr(),
-                        self.c_natm,
-                        self.c_bas.as_ptr(),
-                        self.c_nbas,
-                        self.c_env.as_ptr(),
+                        self.atm.as_ptr() as _,
+                        self.atm.len() as c_int,
+                        self.bas.as_ptr() as _,
+                        self.bas.len() as c_int,
+                        self.env.as_ptr(),
                         self.c_opt,
                         null_mut(),
                     ),
@@ -680,11 +665,11 @@ impl CINTR2CDATA {
                         buf.as_mut_ptr(),
                         null(),
                         shls.as_mut_ptr(),
-                        self.c_atm.as_ptr(),
-                        self.c_natm,
-                        self.c_bas.as_ptr(),
-                        self.c_nbas,
-                        self.c_env.as_ptr(),
+                        self.atm.as_ptr() as _,
+                        self.atm.len() as c_int,
+                        self.bas.as_ptr() as _,
+                        self.bas.len() as c_int,
+                        self.env.as_ptr(),
                         self.c_opt,
                         null_mut(),
                     ),
@@ -695,11 +680,11 @@ impl CINTR2CDATA {
                         buf.as_mut_ptr(),
                         null(),
                         shls.as_mut_ptr(),
-                        self.c_atm.as_ptr(),
-                        self.c_natm,
-                        self.c_bas.as_ptr(),
-                        self.c_nbas,
-                        self.c_env.as_ptr(),
+                        self.atm.as_ptr() as _,
+                        self.atm.len() as c_int,
+                        self.bas.as_ptr() as _,
+                        self.bas.len() as c_int,
+                        self.env.as_ptr(),
                         self.c_opt,
                         null_mut(),
                     ),
@@ -707,11 +692,11 @@ impl CINTR2CDATA {
                         buf.as_mut_ptr(),
                         null(),
                         shls.as_mut_ptr(),
-                        self.c_atm.as_ptr(),
-                        self.c_natm,
-                        self.c_bas.as_ptr(),
-                        self.c_nbas,
-                        self.c_env.as_ptr(),
+                        self.atm.as_ptr() as _,
+                        self.atm.len() as c_int,
+                        self.bas.as_ptr() as _,
+                        self.bas.len() as c_int,
+                        self.env.as_ptr(),
                         self.c_opt,
                         null_mut(),
                     ),
@@ -722,54 +707,6 @@ impl CINTR2CDATA {
         buf
     }
 }
-
-//pub fn cint2e_sph_rust(mut buf: Vec<f64>, mut shls: Vec<i32>,
-//                   c_atm: & *mut c_int, c_natm:c_int,
-//                   c_bas: & *mut c_int, c_nbas:c_int,
-//                   c_env: & *mut f64,
-//                   c_opt: & *mut CINTOpt) -> Vec<f64> {
-//    //
-//    buf.shrink_to_fit();
-//    let mut buf = ManuallyDrop::new(buf);
-//    let (c_buf, buf_len, buf_cap) = (buf.as_mut_ptr() as *mut f64, buf.len(),
-// buf.capacity());
-//
-//    shls.shrink_to_fit();
-//    let mut shls = ManuallyDrop::new(shls);
-//    let (c_shls,shls_len,shls_cap) = (shls.as_mut_ptr() as *mut
-// c_int,shls.len(),shls.capacity());    let mut new_buf:Vec<f64>;
-//    unsafe {
-//        cint::cint2e_sph(c_buf, c_shls, *c_atm, c_natm, *c_bas, c_nbas,
-// *c_env, *c_opt);        //println!("debug 1 {}", &c_buf.read());
-//        let shls = Vec::from_raw_parts(c_shls, shls_len, shls_cap);
-//        new_buf = Vec::from_raw_parts(c_buf, buf_len, buf_cap);
-//        //println!("debug 2");
-//        //vec![0.0,0.0]
-//    }
-//    new_buf
-//}
-//pub fn cint1e_ovlp_sph_rust(mut buf: Vec<f64>, mut shls: Vec<i32>,
-//                   c_atm: & *mut c_int, c_natm:c_int,
-//                   c_bas: & *mut c_int, c_nbas:c_int,
-//                   c_env: & *mut f64,
-//                   c_opt: & *mut CINTOpt) -> Vec<f64> {
-//    //
-//    buf.shrink_to_fit();
-//    let mut buf = ManuallyDrop::new(buf);
-//    let (c_buf, buf_len, buf_cap) = (buf.as_mut_ptr() as *mut f64, buf.len(),
-// buf.capacity());
-//
-//    shls.shrink_to_fit();
-//    let mut shls = ManuallyDrop::new(shls);
-//    let (c_shls,shls_len,shls_cap) = (shls.as_mut_ptr() as *mut
-// c_int,shls.len(),shls.capacity());    let mut new_buf:Vec<f64>;
-//    unsafe {
-//        cint::cint1e_ovlp_sph(c_buf, c_shls, *c_atm, c_natm, *c_bas, c_nbas,
-// *c_env, *c_opt);        let shls = Vec::from_raw_parts(c_shls, shls_len,
-// shls_cap);        new_buf = Vec::from_raw_parts(c_buf, buf_len, buf_cap);
-//    }
-//    new_buf
-//}
 
 #[test]
 pub fn test_1() {
@@ -833,7 +770,7 @@ pub fn test_1() {
     use crate::{CintType, CINTR2CDATA};
     let mut cint_data = CINTR2CDATA::new();
     cint_data.initial_r2c(&atm, natm, &bas, nbas, &env);
-    cint_data.set_cint_type(&CintType::Spheric);
+    cint_data.set_cint_type(CintType::Spheric);
     //=============================================================================
     // for int1e_nuc
     //=============================================================================

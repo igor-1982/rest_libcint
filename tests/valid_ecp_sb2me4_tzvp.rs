@@ -65,7 +65,7 @@ mod valid_ecp_sb2me4_tzvp {
     #[test]
     fn test_ECPscalar_ignuc_cart() {
         let mut cint_data = initialize();
-        cint_data.set_cint_type(&CintType::Cartesian);
+        cint_data.set_cint_type(CintType::Cartesian);
         let now = Instant::now();
         let shl_slices = vec![[7, 93], [14, 121]];
         let (out, _) = cint_data.integral_ecp_s1::<ECPscalar_ignuc>(Some(&shl_slices));

@@ -2971,11 +2971,11 @@ macro_rules! impl_intor_optimizer {
             unsafe {
                 cint::$optim_cint(
                     &mut self.c_opt,
-                    self.c_atm.as_mut_ptr(),
-                    self.c_natm,
-                    self.c_bas.as_mut_ptr(),
-                    self.c_nbas,
-                    self.c_env.as_mut_ptr(),
+                    self.atm.as_ptr() as _,
+                    self.atm.len() as c_int,
+                    self.bas.as_ptr() as _,
+                    self.bas.len() as c_int,
+                    self.env.as_ptr(),
                 );
             }
         }
@@ -2984,11 +2984,11 @@ macro_rules! impl_intor_optimizer {
             unsafe {
                 cint::$optim_cint(
                     &mut self.c_opt,
-                    self.c_atm.as_mut_ptr(),
-                    self.c_natm,
-                    self.c_bas.as_mut_ptr(),
-                    self.c_nbas,
-                    self.c_env.as_mut_ptr(),
+                    self.atm.as_ptr() as _,
+                    self.atm.len() as c_int,
+                    self.bas.as_ptr() as _,
+                    self.bas.len() as c_int,
+                    self.env.as_ptr(),
                 );
             }
         }

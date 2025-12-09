@@ -3,6 +3,7 @@ use crate::cecp_wrapper::*;
 use crate::cint;
 use crate::utilities::*;
 use crate::{cecp::ECPOpt, CintType, CINTR2CDATA};
+use core::ffi::c_int;
 use itertools::Itertools;
 use rayon::prelude::*;
 use rayon::{current_thread_index, max_num_threads};
@@ -11,13 +12,11 @@ use std::sync::Mutex;
 
 #[derive(Clone)]
 pub struct ECPData {
+    pub atm: Vec<[c_int; 6]>,
+    pub bas: Vec<[c_int; 8]>,
+    pub env: Vec<f64>,
+    pub cint_type: CintType,
     c_opt: *mut ECPOpt,
-    c_natm: i32,
-    c_nbas: i32,
-    cint_type: CintType,
-    c_atm: Vec<i32>,
-    c_bas: Vec<i32>,
-    c_env: Vec<f64>,
 }
 
 unsafe impl Send for ECPData {}
@@ -25,33 +24,22 @@ unsafe impl Sync for ECPData {}
 
 impl ECPData {
     pub fn new() -> ECPData {
-        ECPData {
-            c_opt: null_mut(),
-            c_natm: 0,
-            c_nbas: 0,
-            cint_type: CintType::Spheric,
-            c_atm: Vec::new(),
-            c_bas: Vec::new(),
-            c_env: Vec::new(),
-        }
+        ECPData { atm: Vec::new(), bas: Vec::new(), env: Vec::new(), cint_type: CintType::Spheric, c_opt: null_mut() }
     }
 
     pub fn from_cint_data(cint_data: &CINTR2CDATA) -> ECPData {
         // initialize
         let mut ecp_data = ECPData {
             c_opt: null_mut(),
-            c_natm: cint_data.c_natm,
-            c_nbas: cint_data.c_nbas,
+            atm: cint_data.atm.clone(),
+            bas: cint_data.bas.clone(),
+            env: cint_data.env.clone(),
             cint_type: cint_data.cint_type,
-            c_atm: cint_data.c_atm.clone(),
-            c_bas: cint_data.c_bas.clone(),
-            c_env: cint_data.c_env.clone(),
         };
         // concate ECP data
-        ecp_data.c_bas.append(&mut cint_data.c_ecp.clone());
-        ecp_data.c_nbas += cint_data.c_necp;
-        ecp_data.c_env[AS_ECPBAS_OFFSET as usize] = cint_data.c_nbas as f64;
-        ecp_data.c_env[AS_NECPBAS as usize] = cint_data.c_necp as f64;
+        ecp_data.bas.append(&mut cint_data.ecpbas.clone());
+        ecp_data.env[AS_ECPBAS_OFFSET as usize] = cint_data.bas.len() as f64;
+        ecp_data.env[AS_NECPBAS as usize] = cint_data.ecpbas.len() as f64;
         return ecp_data;
     }
 
@@ -67,7 +55,14 @@ impl ECPData {
     {
         self.optimizer_destruct();
         unsafe {
-            T::optimizer(&mut self.c_opt, self.c_atm.as_ptr(), self.c_natm, self.c_bas.as_ptr(), self.c_nbas, self.c_env.as_ptr());
+            T::optimizer(
+                &mut self.c_opt,
+                self.atm.as_ptr() as _,
+                self.atm.len() as c_int,
+                self.bas.as_ptr() as _,
+                self.bas.len() as c_int,
+                self.env.as_ptr(),
+            );
         }
     }
 
@@ -85,8 +80,8 @@ impl ECPData {
         let loc_nctr = NCTR_OF as usize;
         let loc_bas = BAS_SLOTS as usize;
         let id_bas = id_bas as usize;
-        let nctr = self.c_bas[id_bas * loc_bas + loc_nctr];
-        let nang = self.c_bas[id_bas * loc_bas + loc_ang] * 2 + 1;
+        let nctr = self.bas[id_bas][loc_nctr];
+        let nang = self.bas[id_bas][loc_ang] * 2 + 1;
         return (nctr * nang) as usize;
     }
 
@@ -102,8 +97,8 @@ impl ECPData {
         let loc_nctr = NCTR_OF as usize;
         let loc_bas = BAS_SLOTS as usize;
         let id_bas = id_bas as usize;
-        let nctr = self.c_bas[id_bas * loc_bas + loc_nctr];
-        let l = self.c_bas[id_bas * loc_bas + loc_ang];
+        let nctr = self.bas[id_bas][loc_nctr];
+        let l = self.bas[id_bas][loc_ang];
         let nang = (l + 1) * (l + 2) / 2;
         return (nctr * nang) as usize;
     }
@@ -123,7 +118,7 @@ impl ECPData {
     /// Location of atomic orbitals, for basis configuration of the current
     /// molecule.
     pub fn cgto_loc(&self) -> Vec<usize> {
-        let nbas_without_ecp = self.c_env[AS_ECPBAS_OFFSET as usize] as i32;
+        let nbas_without_ecp = self.env[AS_ECPBAS_OFFSET as usize] as i32;
         let size_vec = (0..nbas_without_ecp).map(|idx| self.cgto_size(idx)).collect::<Vec<usize>>();
         let mut loc = vec![0; size_vec.len() + 1];
         for idx in (0..size_vec.len() as usize) {
@@ -164,15 +159,15 @@ impl ECPData {
     where
         T: ECPIntegrator,
     {
-        if self.c_env[AS_NECPBAS as usize] as i32 == 0 {
+        if self.env[AS_NECPBAS as usize] as i32 == 0 {
             return Err("No ECP data found in the molecule.".to_string());
         }
         for shl_slice in shl_slices {
             if shl_slice[1] < shl_slice[0] {
                 return Err(format!("in {shl_slice:?}, second number is smaller than first number"));
             }
-            if shl_slice[1] > self.c_nbas {
-                return Err(format!("in {:?}, number of shells exceeds {:}", shl_slice, self.c_nbas));
+            if shl_slice[1] > self.bas.len() as i32 {
+                return Err(format!("in {:?}, number of shells exceeds {:}", shl_slice, self.bas.len()));
             }
             if shl_slice[0] < 0 {
                 return Err(format!("in {shl_slice:?}, shell number should not be negative"));
@@ -214,7 +209,7 @@ impl ECPData {
         T: ECPIntegrator,
     {
         let shls_min = shls_slice.iter().map(|x| x[0]).min().unwrap_or(0);
-        let shls_max = shls_slice.iter().map(|x| x[1]).max().unwrap_or(self.c_nbas);
+        let shls_max = shls_slice.iter().map(|x| x[1]).max().unwrap_or(self.bas.len() as i32);
         let cache_size = (shls_min..shls_max)
             .into_iter()
             .map(|shl| {
@@ -225,11 +220,11 @@ impl ECPData {
                             null_mut(),
                             null(),
                             shls.as_mut_ptr(),
-                            self.c_atm.as_ptr(),
-                            self.c_natm,
-                            self.c_bas.as_ptr(),
-                            self.c_nbas,
-                            self.c_env.as_ptr(),
+                            self.atm.as_ptr() as _,
+                            self.atm.len() as c_int,
+                            self.bas.as_ptr() as _,
+                            self.bas.len() as c_int,
+                            self.env.as_ptr(),
                             null(),
                             null_mut(),
                         ) as usize
@@ -239,11 +234,11 @@ impl ECPData {
                             null_mut(),
                             null(),
                             shls.as_mut_ptr(),
-                            self.c_atm.as_ptr(),
-                            self.c_natm,
-                            self.c_bas.as_ptr(),
-                            self.c_nbas,
-                            self.c_env.as_ptr(),
+                            self.atm.as_ptr() as _,
+                            self.atm.len() as c_int,
+                            self.bas.as_ptr() as _,
+                            self.bas.len() as c_int,
+                            self.env.as_ptr(),
                             null(),
                             null_mut(),
                         ) as usize
@@ -302,11 +297,11 @@ impl ECPData {
                     out.as_mut_ptr(),
                     shape_ptr,
                     shls.as_ptr(),
-                    self.c_atm.as_ptr(),
-                    self.c_natm,
-                    self.c_bas.as_ptr(),
-                    self.c_nbas,
-                    self.c_env.as_ptr(),
+                    self.atm.as_ptr() as _,
+                    self.atm.len() as c_int,
+                    self.bas.as_ptr() as _,
+                    self.bas.len() as c_int,
+                    self.env.as_ptr(),
                     self.c_opt,
                     cache_ptr,
                 )
@@ -316,11 +311,11 @@ impl ECPData {
                     out.as_mut_ptr(),
                     shape_ptr,
                     shls.as_ptr(),
-                    self.c_atm.as_ptr(),
-                    self.c_natm,
-                    self.c_bas.as_ptr(),
-                    self.c_nbas,
-                    self.c_env.as_ptr(),
+                    self.atm.as_ptr() as _,
+                    self.atm.len() as c_int,
+                    self.bas.as_ptr() as _,
+                    self.bas.len() as c_int,
+                    self.env.as_ptr(),
                     self.c_opt,
                     cache_ptr,
                 )
@@ -410,7 +405,7 @@ impl ECPData {
         let shl_slices = match shl_slices {
             Some(shl_slices) => shl_slices,
             None => {
-                let nbas = self.c_env[AS_ECPBAS_OFFSET as usize] as i32;
+                let nbas = self.env[AS_ECPBAS_OFFSET as usize] as i32;
                 &vec![[0, nbas]; 2]
             },
         };
@@ -431,7 +426,7 @@ impl CINTR2CDATA {
     where
         T: ECPIntegrator,
     {
-        if self.c_necp == 0 {
+        if self.ecpbas.len() == 0 {
             panic!("No ECP data found in the molecule.");
         }
         let mut ecp_data = ECPData::from_cint_data(&self);

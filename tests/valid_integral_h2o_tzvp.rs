@@ -3,7 +3,7 @@ mod valid_integral_h2o_tzvp {
     use approx::*;
     use itertools::Itertools;
     use ndarray::prelude::*;
-    use num_complex::*;
+    use num::complex::*;
     use rest_libcint::prelude::*;
     use std::time::Instant;
 
@@ -134,7 +134,7 @@ mod valid_integral_h2o_tzvp {
     #[test]
     fn test_int3c2e_s2ij_cart_slice() {
         let mut cint_data = initialize();
-        cint_data.set_cint_type(&CintType::Cartesian);
+        cint_data.set_cint_type(CintType::Cartesian);
         let now = Instant::now();
         let (out, _) = cint_data.integral_s2ij::<int3c2e>(None);
         println!("Elapsed: {:.3?}", now.elapsed());
