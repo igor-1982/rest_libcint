@@ -442,7 +442,8 @@ impl CInt {
     where
         T: Integrator + Default,
     {
-        self.integral_inner::<T, f64>(shls_slice, CIntSymm::S1)
+        let data = self.merge_ecpbas();
+        data.integral_inner::<T, f64>(shls_slice, CIntSymm::S1)
     }
 
     /// Legacy support for integral evaluation for rest_libcint with spinor
@@ -453,7 +454,9 @@ impl CInt {
     where
         T: Integrator + Default,
     {
-        self.integral_inner::<T, Complex<f64>>(shls_slice, CIntSymm::S1)
+        let mut data = self.clone();
+        data.set_cint_type(Spinor);
+        data.integral_inner::<T, Complex<f64>>(shls_slice, CIntSymm::S1)
     }
 
     /// Legacy support for integral evaluation for rest_libcint with spinor
@@ -464,7 +467,9 @@ impl CInt {
     where
         T: Integrator + Default,
     {
-        self.integral_inner::<T, Complex<f64>>(shls_slice, CIntSymm::S1)
+        let mut data = self.clone();
+        data.set_cint_type(Spinor);
+        data.integral_inner::<T, Complex<f64>>(shls_slice, CIntSymm::S1)
     }
 
     /// Legacy support for integral evaluation for rest_libcint with s2ij
@@ -497,7 +502,9 @@ impl CInt {
     where
         T: Integrator + Default,
     {
-        self.integral_inner::<T, Complex<f64>>(shls_slice, CIntSymm::S2ij)
+        let mut data = self.clone();
+        data.set_cint_type(Spinor);
+        data.integral_inner::<T, Complex<f64>>(shls_slice, CIntSymm::S2ij)
     }
 
     pub fn integral_inner<T, F>(&self, shls_slice: Option<&[[c_int; 2]]>, aosym: CIntSymm) -> (Vec<F>, Vec<usize>)

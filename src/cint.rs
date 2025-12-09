@@ -119,10 +119,8 @@ pub struct CInt {
     ///   calculations.
     pub cint_type: CIntType,
 
-    /// Optimizer for integral evaluation (not intended for user).
-    ///
-    /// This field will probably be removed in future versions.
-    pub(crate) c_opt: Option<Arc<CIntOptimizer>>,
+    /// Optimizer for integral evaluation (not intended for user in most cases).
+    pub c_opt: Option<Arc<CIntOptimizer>>,
 }
 
 /// Distinguish between general integral or ECP (effective core potential)

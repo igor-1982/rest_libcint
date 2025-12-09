@@ -29,6 +29,7 @@ static = []
 qcint = []
 
 [dev-dependencies]
+rstest = "0.25"
 ndarray = "0.15"
 approx = "0.5"
 
