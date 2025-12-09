@@ -1,6 +1,6 @@
 use approx::assert_relative_eq;
-use rest_libcint::prelude::*;
 use num::complex::ComplexFloat;
+use rest_libcint::prelude::*;
 
 #[cfg(test)]
 mod test {

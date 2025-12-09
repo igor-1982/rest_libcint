@@ -5,6 +5,7 @@ mod valid_integral_h2o_tzvp {
     use ndarray::prelude::*;
     use num::complex::*;
     use rest_libcint::prelude::*;
+    use rest_libcint_wrapper::*;
     use std::time::Instant;
 
     #[test]

@@ -1,8 +1,8 @@
 // Reference source: libcint/scripts/pyscf_h2o_tzvp.ipynb
 
 use approx::assert_relative_eq;
-use rest_libcint::prelude::*;
 use num::complex::ComplexFloat;
+use rest_libcint::prelude::*;
 use rstest::rstest;
 
 use CIntType::{Cartesian, Spheric, Spinor};

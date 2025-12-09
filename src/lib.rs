@@ -14,10 +14,10 @@ pub mod cint_initialize;
 pub mod cint_prop;
 pub mod cint_result;
 pub mod ffi;
+pub mod gto;
 pub mod prelude;
 pub mod test_mol;
 pub mod util;
-pub mod gto;
 
 pub mod cint_old;
 

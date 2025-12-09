@@ -5,6 +5,7 @@ mod valid_ecp_sb2me4_tzvp {
     use itertools::Itertools;
     use ndarray::prelude::*;
     use rest_libcint::prelude::*;
+    use rest_libcint_wrapper::*;
     use std::time::Instant;
 
     #[test]

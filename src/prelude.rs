@@ -7,8 +7,10 @@ pub use crate::util::ShlsSlice;
 // for previous cint compatibility
 pub use CInt as CINTR2CDATA;
 pub use CIntType as CintType;
-pub use crate::ffi::cecp_wrapper::*;
-pub use crate::ffi::cint_wrapper::*;
+pub mod rest_libcint_wrapper {
+    pub use crate::ffi::cecp_wrapper::*;
+    pub use crate::ffi::cint_wrapper::*;
+}
 
 // for doc testing
 pub use crate::test_mol::{cint_fingerprint, cint_fp, init_c10h22_def2_qzvp, init_h2o_def2_jk, init_h2o_def2_tzvp, init_sb2me4_cc_pvtz};

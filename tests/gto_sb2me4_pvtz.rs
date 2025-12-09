@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod test {
-    use rest_libcint::{gto::gto_crafter::get_gto_eval_name_f, prelude::*};
     use num::Complex;
+    use rest_libcint::{gto::gto_crafter::get_gto_eval_name_f, prelude::*};
     use rstest::rstest;
 
     #[rstest]
