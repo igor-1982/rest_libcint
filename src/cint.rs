@@ -176,129 +176,71 @@ extern "C" {
 }
 #[link(name = "cint")]
 extern "C" {
-    pub fn CINTlen_spinor(
-        bas_id: ::std::os::raw::c_int,
-        bas: *const ::std::os::raw::c_int,
-    ) -> ::std::os::raw::c_int;
+    pub fn CINTlen_spinor(bas_id: ::std::os::raw::c_int, bas: *const ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
 #[link(name = "cint")]
 extern "C" {
-    pub fn CINTcgtos_cart(
-        bas_id: ::std::os::raw::c_int,
-        bas: *const ::std::os::raw::c_int,
-    ) -> ::std::os::raw::c_int;
+    pub fn CINTcgtos_cart(bas_id: ::std::os::raw::c_int, bas: *const ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
 #[link(name = "cint")]
 extern "C" {
-    pub fn CINTcgtos_spheric(
-        bas_id: ::std::os::raw::c_int,
-        bas: *const ::std::os::raw::c_int,
-    ) -> ::std::os::raw::c_int;
+    pub fn CINTcgtos_spheric(bas_id: ::std::os::raw::c_int, bas: *const ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
 #[link(name = "cint")]
 extern "C" {
-    pub fn CINTcgtos_spinor(
-        bas_id: ::std::os::raw::c_int,
-        bas: *const ::std::os::raw::c_int,
-    ) -> ::std::os::raw::c_int;
+    pub fn CINTcgtos_spinor(bas_id: ::std::os::raw::c_int, bas: *const ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
 #[link(name = "cint")]
 extern "C" {
-    pub fn CINTcgto_cart(
-        bas_id: ::std::os::raw::c_int,
-        bas: *const ::std::os::raw::c_int,
-    ) -> ::std::os::raw::c_int;
+    pub fn CINTcgto_cart(bas_id: ::std::os::raw::c_int, bas: *const ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
 #[link(name = "cint")]
 extern "C" {
-    pub fn CINTcgto_spheric(
-        bas_id: ::std::os::raw::c_int,
-        bas: *const ::std::os::raw::c_int,
-    ) -> ::std::os::raw::c_int;
+    pub fn CINTcgto_spheric(bas_id: ::std::os::raw::c_int, bas: *const ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
 #[link(name = "cint")]
 extern "C" {
-    pub fn CINTcgto_spinor(
-        bas_id: ::std::os::raw::c_int,
-        bas: *const ::std::os::raw::c_int,
-    ) -> ::std::os::raw::c_int;
+    pub fn CINTcgto_spinor(bas_id: ::std::os::raw::c_int, bas: *const ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
 #[link(name = "cint")]
 extern "C" {
-    pub fn CINTtot_pgto_spheric(
-        bas: *const ::std::os::raw::c_int,
-        nbas: ::std::os::raw::c_int,
-    ) -> ::std::os::raw::c_int;
+    pub fn CINTtot_pgto_spheric(bas: *const ::std::os::raw::c_int, nbas: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
 #[link(name = "cint")]
 extern "C" {
-    pub fn CINTtot_pgto_spinor(
-        bas: *const ::std::os::raw::c_int,
-        nbas: ::std::os::raw::c_int,
-    ) -> ::std::os::raw::c_int;
+    pub fn CINTtot_pgto_spinor(bas: *const ::std::os::raw::c_int, nbas: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
 #[link(name = "cint")]
 extern "C" {
-    pub fn CINTtot_cgto_cart(
-        bas: *const ::std::os::raw::c_int,
-        nbas: ::std::os::raw::c_int,
-    ) -> ::std::os::raw::c_int;
+    pub fn CINTtot_cgto_cart(bas: *const ::std::os::raw::c_int, nbas: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
 #[link(name = "cint")]
 extern "C" {
-    pub fn CINTtot_cgto_spheric(
-        bas: *const ::std::os::raw::c_int,
-        nbas: ::std::os::raw::c_int,
-    ) -> ::std::os::raw::c_int;
+    pub fn CINTtot_cgto_spheric(bas: *const ::std::os::raw::c_int, nbas: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
 #[link(name = "cint")]
 extern "C" {
-    pub fn CINTtot_cgto_spinor(
-        bas: *const ::std::os::raw::c_int,
-        nbas: ::std::os::raw::c_int,
-    ) -> ::std::os::raw::c_int;
+    pub fn CINTtot_cgto_spinor(bas: *const ::std::os::raw::c_int, nbas: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
 #[link(name = "cint")]
 extern "C" {
-    pub fn CINTshells_cart_offset(
-        ao_loc: *mut ::std::os::raw::c_int,
-        bas: *const ::std::os::raw::c_int,
-        nbas: ::std::os::raw::c_int,
-    );
+    pub fn CINTshells_cart_offset(ao_loc: *mut ::std::os::raw::c_int, bas: *const ::std::os::raw::c_int, nbas: ::std::os::raw::c_int);
 }
 #[link(name = "cint")]
 extern "C" {
-    pub fn CINTshells_spheric_offset(
-        ao_loc: *mut ::std::os::raw::c_int,
-        bas: *const ::std::os::raw::c_int,
-        nbas: ::std::os::raw::c_int,
-    );
+    pub fn CINTshells_spheric_offset(ao_loc: *mut ::std::os::raw::c_int, bas: *const ::std::os::raw::c_int, nbas: ::std::os::raw::c_int);
 }
 #[link(name = "cint")]
 extern "C" {
-    pub fn CINTshells_spinor_offset(
-        ao_loc: *mut ::std::os::raw::c_int,
-        bas: *const ::std::os::raw::c_int,
-        nbas: ::std::os::raw::c_int,
-    );
+    pub fn CINTshells_spinor_offset(ao_loc: *mut ::std::os::raw::c_int, bas: *const ::std::os::raw::c_int, nbas: ::std::os::raw::c_int);
 }
 #[link(name = "cint")]
 extern "C" {
-    pub fn CINTc2s_bra_sph(
-        sph: *mut f64,
-        nket: ::std::os::raw::c_int,
-        cart: *mut f64,
-        l: ::std::os::raw::c_int,
-    ) -> *mut f64;
+    pub fn CINTc2s_bra_sph(sph: *mut f64, nket: ::std::os::raw::c_int, cart: *mut f64, l: ::std::os::raw::c_int) -> *mut f64;
 }
 #[link(name = "cint")]
 extern "C" {
-    pub fn CINTc2s_ket_sph(
-        sph: *mut f64,
-        nket: ::std::os::raw::c_int,
-        cart: *mut f64,
-        l: ::std::os::raw::c_int,
-    ) -> *mut f64;
+    pub fn CINTc2s_ket_sph(sph: *mut f64, nket: ::std::os::raw::c_int, cart: *mut f64, l: ::std::os::raw::c_int) -> *mut f64;
 }
 #[link(name = "cint")]
 extern "C" {
