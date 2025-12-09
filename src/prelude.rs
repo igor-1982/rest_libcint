@@ -1,12 +1,14 @@
 pub use crate::cint::{CInt, CIntKind, CIntOptimizer, CIntOutput, CIntSymm, CIntType};
 pub use crate::cint_change::fakemol_for_charges;
 pub use crate::cint_result::{CIntError, CIntErrorBase};
-pub use crate::ffi::cecp_wrapper::*;
-pub use crate::ffi::cint_wrapper::*;
 pub use crate::ffi::wrapper_traits::Integrator;
 pub use crate::util::ShlsSlice;
+
+// for previous cint compatibility
 pub use CInt as CINTR2CDATA;
 pub use CIntType as CintType;
+pub use crate::ffi::cecp_wrapper::*;
+pub use crate::ffi::cint_wrapper::*;
 
 // for doc testing
 pub use crate::test_mol::{cint_fingerprint, cint_fp, init_c10h22_def2_qzvp, init_h2o_def2_jk, init_h2o_def2_tzvp, init_sb2me4_cc_pvtz};
@@ -18,6 +20,7 @@ pub(crate) use crate::ffi::cecp_ffi;
 pub(crate) use crate::ffi::cecp_ffi::ECPOpt;
 pub(crate) use crate::ffi::cint_ffi;
 pub(crate) use crate::ffi::cint_ffi::CINTOpt;
+pub(crate) use crate::gto::prelude_dev::*;
 pub(crate) use crate::util::*;
 pub(crate) use crate::{cint_error, cint_raise, cint_trace};
 pub(crate) use derive_builder::{Builder, UninitializedFieldError};

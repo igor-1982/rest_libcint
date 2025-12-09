@@ -4,7 +4,6 @@
 #![allow(clippy::needless_range_loop)]
 #![allow(clippy::approx_constant)]
 
-pub mod cecp;
 pub mod cint;
 pub mod cint_change;
 pub mod cint_crafter;
@@ -18,6 +17,7 @@ pub mod ffi;
 pub mod prelude;
 pub mod test_mol;
 pub mod util;
+pub mod gto;
 
 pub mod cint_old;
 
