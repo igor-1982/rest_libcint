@@ -9,7 +9,7 @@ mod valid_integral_h2o_tzvp {
 
     #[test]
     fn test_int3c2e_s1_full() {
-        let mut cint_data = initialize();
+        let cint_data = initialize();
         let now = Instant::now();
         let (out, _) = cint_data.integral_s1::<int3c2e>(None);
         println!("Elapsed: {:.3?}", now.elapsed());
@@ -22,7 +22,7 @@ mod valid_integral_h2o_tzvp {
 
     #[test]
     fn test_int3c2e_s1_slice() {
-        let mut cint_data = initialize();
+        let cint_data = initialize();
         let now = Instant::now();
         let shl_slices = vec![[3, 15], [6, 12], [2, 18]];
         let (out, _) = cint_data.integral_s1::<int3c2e>(Some(&shl_slices));
@@ -36,7 +36,7 @@ mod valid_integral_h2o_tzvp {
 
     #[test]
     fn test_int3c2e_ip1_s1_slice() {
-        let mut cint_data = initialize();
+        let cint_data = initialize();
         let now = Instant::now();
         let shl_slices = vec![[3, 15], [6, 12], [2, 18]];
         let (out, _) = cint_data.integral_s1::<int3c2e_ip1>(Some(&shl_slices));
@@ -50,7 +50,7 @@ mod valid_integral_h2o_tzvp {
 
     #[test]
     fn test_int2c2e_ip1_s1_slice() {
-        let mut cint_data = initialize();
+        let cint_data = initialize();
         let now = Instant::now();
         let shl_slices = vec![[3, 15], [6, 12]];
         let (out, _) = cint_data.integral_s1::<int2c2e_ip1>(Some(&shl_slices));
@@ -64,7 +64,7 @@ mod valid_integral_h2o_tzvp {
 
     #[test]
     fn test_int2e_ip1ip2_s1_slice() {
-        let mut cint_data = initialize();
+        let cint_data = initialize();
         let now = Instant::now();
         let shl_slices = vec![[3, 15], [6, 12], [2, 18], [7, 11]];
         let (out, _) = cint_data.integral_s1::<int2e_ip1ip2>(Some(&shl_slices));
@@ -78,7 +78,7 @@ mod valid_integral_h2o_tzvp {
 
     #[test]
     fn test_int3c2e_s2ij_full() {
-        let mut cint_data = initialize();
+        let cint_data = initialize();
         let now = Instant::now();
         let (out, _) = cint_data.integral_s2ij::<int3c2e>(None);
         println!("Elapsed: {:.3?}", now.elapsed());
@@ -91,7 +91,7 @@ mod valid_integral_h2o_tzvp {
 
     #[test]
     fn test_int3c2e_ip2_s2ij_slice() {
-        let mut cint_data = initialize();
+        let cint_data = initialize();
         let now = Instant::now();
         let shl_slices = vec![[0, 15], [0, 15], [6, 12]];
         let (out, _) = cint_data.integral_s2ij::<int3c2e_ip2>(Some(&shl_slices));
@@ -105,7 +105,7 @@ mod valid_integral_h2o_tzvp {
 
     #[test]
     fn test_int2e_ip2_s2ij_slice() {
-        let mut cint_data = initialize();
+        let cint_data = initialize();
         let now = Instant::now();
         let shl_slices = vec![[3, 15], [3, 15], [6, 12], [7, 11]];
         let (out, _) = cint_data.integral_s2ij::<int2e_ip2>(Some(&shl_slices));
@@ -119,7 +119,7 @@ mod valid_integral_h2o_tzvp {
 
     #[test]
     fn test_int2c2e_s2ij_slice() {
-        let mut cint_data = initialize();
+        let cint_data = initialize();
         let now = Instant::now();
         let shl_slices = vec![[3, 15], [3, 15]];
         let (out, _) = cint_data.integral_s2ij::<int2c2e>(Some(&shl_slices));
@@ -147,7 +147,7 @@ mod valid_integral_h2o_tzvp {
 
     #[test]
     fn test_int1e_ignuc_spinor_s1_full() {
-        let mut cint_data = initialize();
+        let cint_data = initialize();
         let now = Instant::now();
         let (out, out_shape) = cint_data.integral_spinor_s1::<int1e_ignuc>(None);
         println!("out_shape: {:?}", out_shape);
@@ -165,7 +165,7 @@ mod valid_integral_h2o_tzvp {
 
     #[test]
     fn test_int2e_ip1ip2_spinor_s1_slice() {
-        let mut cint_data = initialize();
+        let cint_data = initialize();
         let now = Instant::now();
         let shl_slices = vec![[1, 7], [6, 12], [15, 19], [10, 14]];
         let (out, _) = cint_data.integral_spinor_s1::<int2e_ip1ip2>(Some(&shl_slices));

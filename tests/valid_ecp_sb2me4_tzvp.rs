@@ -9,7 +9,7 @@ mod valid_ecp_sb2me4_tzvp {
 
     #[test]
     fn test_ECPscalar() {
-        let mut cint_data = initialize();
+        let cint_data = initialize();
         let now = Instant::now();
         let (out, _) = cint_data.integral_ecp_s1::<ECPscalar>(None);
         println!("Elapsed: {:.3?}", now.elapsed());
@@ -22,7 +22,7 @@ mod valid_ecp_sb2me4_tzvp {
 
     #[test]
     fn test_ECPscalar_ipnuc() {
-        let mut cint_data = initialize();
+        let cint_data = initialize();
         let now = Instant::now();
         let shl_slices = vec![[7, 93], [14, 121]];
         let (out, _) = cint_data.integral_ecp_s1::<ECPscalar_ipnuc>(Some(&shl_slices));
@@ -36,7 +36,7 @@ mod valid_ecp_sb2me4_tzvp {
 
     #[test]
     fn test_ECPscalar_ipiprinv() {
-        let mut cint_data = initialize();
+        let cint_data = initialize();
         let now = Instant::now();
         let shl_slices = vec![[7, 93], [14, 121]];
         let (out, _) = cint_data.integral_ecp_s1::<ECPscalar_ipiprinv>(Some(&shl_slices));
@@ -50,7 +50,7 @@ mod valid_ecp_sb2me4_tzvp {
 
     #[test]
     fn test_ECPscalar_ignuc() {
-        let mut cint_data = initialize();
+        let cint_data = initialize();
         let now = Instant::now();
         let shl_slices = vec![[7, 93], [14, 121]];
         let (out, _) = cint_data.integral_ecp_s1::<ECPscalar_ignuc>(Some(&shl_slices));

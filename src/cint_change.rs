@@ -8,10 +8,6 @@ use core::ops::Add;
 use crate::ffi::cecp_ffi;
 use crate::ffi::cint_ffi;
 use crate::CInt;
-use CintType as CIntType;
-use CintType::Cartesian;
-use CintType::Spheric;
-use CintType::Spinor;
 
 /// Concatenating two molecules for integral.
 impl Add for &CInt {
@@ -143,7 +139,7 @@ impl FakeMolForChargeArg for f64 {
         let coef = 1.0 / (2.0 * PI.sqrt() * gaussian_int(2.0, exponent));
         fake_env.extend_from_slice(&[exponent, coef]);
 
-        CInt { atm: fake_atm, bas: fake_bas, ecpbas: vec![], env: fake_env, cint_type: CIntType::default(), c_opt: null_mut() }
+        CInt { atm: fake_atm, bas: fake_bas, ecpbas: vec![], env: fake_env, cint_type: CIntType::default(), c_opt: None }
     }
 }
 
@@ -193,7 +189,7 @@ impl FakeMolForChargeArg for &[f64] {
             ptr += 2;
         });
 
-        CInt { atm: fake_atm, bas: fake_bas, ecpbas: vec![], env: fake_env, cint_type: CIntType::default(), c_opt: null_mut() }
+        CInt { atm: fake_atm, bas: fake_bas, ecpbas: vec![], env: fake_env, cint_type: CIntType::default(), c_opt: None }
     }
 }
 
@@ -255,40 +251,7 @@ pub fn fakemol_for_cgtf_charge(coord: [f64; 3], exponents: &[f64], coeffs: &[f64
     fake_env.extend_from_slice(exponents);
     fake_env.extend_from_slice(&coeffs_converted);
 
-    CInt { atm: fake_atm, bas: fake_bas, ecpbas: vec![], env: fake_env, cint_type: CIntType::default(), c_opt: null_mut() }
-}
-
-/// ECP merge and decouple implementation
-impl CInt {
-    /// Decouples ECP data from the `CInt` instance, returning a new `CInt`
-    /// instance that have basis data and ecp data separated.
-    ///
-    /// This function is not intended to be used directly by users. This
-    /// function is often used internally for data preparation.
-    pub fn decopule_ecpbas(&self) -> CInt {
-        const AS_ECPBAS_OFFSET: usize = cecp_ffi::AS_ECPBAS_OFFSET as usize;
-        const AS_NECPBAS: usize = cecp_ffi::AS_NECPBAS as usize;
-
-        if !self.is_ecp_merged() {
-            self.clone()
-        } else {
-            let mut decoupled = self.clone();
-            let nbas = self.env[AS_ECPBAS_OFFSET] as usize;
-            let (bas, ecpbas) = decoupled.bas.split_at(nbas);
-            let bas = bas.to_vec();
-            let ecpbas = ecpbas.to_vec();
-            decoupled.bas = bas;
-            decoupled.ecpbas = ecpbas;
-            decoupled.env[AS_ECPBAS_OFFSET] = 0.0;
-            decoupled.env[AS_NECPBAS] = 0.0;
-            decoupled
-        }
-    }
-
-    /// Check whether the `CInt` instance has been merged with ECP data.
-    pub fn is_ecp_merged(&self) -> bool {
-        self.env[cecp_ffi::AS_ECPBAS_OFFSET as usize] != 0.0
-    }
+    CInt { atm: fake_atm, bas: fake_bas, ecpbas: vec![], env: fake_env, cint_type: CIntType::default(), c_opt: None }
 }
 
 impl CInt {

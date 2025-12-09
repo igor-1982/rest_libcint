@@ -1,16 +1,25 @@
-pub use crate::cecp_wrapper::*;
-pub use crate::cint_wrapper::*;
-pub use crate::CintType;
-pub use crate::CINTR2CDATA;
-pub use CINTR2CDATA as CInt;
+pub use crate::cint::{CInt, CIntKind, CIntOptimizer, CIntOutput, CIntSymm, CIntType};
+pub use crate::cint_change::fakemol_for_charges;
+pub use crate::cint_result::{CIntError, CIntErrorBase};
+pub use crate::ffi::cecp_wrapper::*;
+pub use crate::ffi::cint_wrapper::*;
+pub use crate::ffi::wrapper_traits::Integrator;
+pub use crate::util::ShlsSlice;
+pub use CInt as CINTR2CDATA;
+pub use CIntType as CintType;
+
+// for doc testing
+pub use crate::test_mol::{cint_fingerprint, cint_fp, init_c10h22_def2_qzvp, init_h2o_def2_jk, init_h2o_def2_tzvp, init_sb2me4_cc_pvtz};
 
 // for developing
 pub(crate) use crate::cint::*;
+pub(crate) use crate::cint_result::CIntResultAPI;
 pub(crate) use crate::ffi::cecp_ffi;
 pub(crate) use crate::ffi::cecp_ffi::ECPOpt;
 pub(crate) use crate::ffi::cint_ffi;
 pub(crate) use crate::ffi::cint_ffi::CINTOpt;
 pub(crate) use crate::util::*;
+pub(crate) use crate::{cint_error, cint_raise, cint_trace};
 pub(crate) use derive_builder::{Builder, UninitializedFieldError};
 pub(crate) use duplicate::duplicate_item;
 pub(crate) use itertools::Itertools;
@@ -27,3 +36,5 @@ pub(crate) use std::ffi::{c_int, c_void};
 pub(crate) use std::fmt::{Debug, Display, Write};
 pub(crate) use std::ptr::NonNull;
 pub(crate) use std::ptr::{null, null_mut};
+pub(crate) use std::sync::Arc;
+pub(crate) use CIntType::{Cartesian, Spheric, Spinor};

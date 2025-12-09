@@ -8,10 +8,6 @@ use crate::prelude::*;
 use crate::ffi::cecp_ffi;
 use crate::ffi::cint_ffi;
 use crate::CInt;
-use CintType as CIntType;
-use CintType::Cartesian;
-use CintType::Spheric;
-use CintType::Spinor;
 
 /// Properties of the `CInt` instance (compute and memory cost is not essential
 /// in this module).
