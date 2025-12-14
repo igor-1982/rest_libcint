@@ -1,0 +1,286 @@
+use crate::gto::prelude_dev::*;
+
+/// Evaluate GTO values with operator $\nabla$ at a single shell.
+///
+/// # See also
+///
+/// This is very similar to function [`gto_shell_eval_grid_cart`], except that
+/// this function also includes zeroth order term.
+///
+/// # PySCF equivalent
+///
+/// `libcgto.so`: `int GTOshell_eval_grid_cart_ip`
+pub fn gto_shell_eval_grid_cart_ip(gto: &mut [f64blk], exps: &[f64blk], coord: &[f64blk; 3], l: usize, nctr: usize) {
+    const ANG_MAX: usize = crate::ffi::cint_ffi::ANG_MAX as usize;
+
+    const D1_X: usize = 0;
+    const D1_Y: usize = 1;
+    const D1_Z: usize = 2;
+
+    let ncart = (l + 1) * (l + 2) / 2;
+    let (exps, exps_2a) = exps.split_at(nctr);
+    let mut gto = gto.chunks_exact_mut(nctr * ncart).collect_vec();
+
+    match l {
+        0 => {
+            for k in 0..nctr {
+                for g in 0..BLKSIMDD {
+                    let e_2a = exps_2a[k].get_simdd(g);
+                    let x = coord[X].get_simdd(g);
+                    let y = coord[Y].get_simdd(g);
+                    let z = coord[Z].get_simdd(g);
+
+                    *gto[D1_X][k].get_simdd_mut(g) = e_2a * x;
+                    *gto[D1_Y][k].get_simdd_mut(g) = e_2a * y;
+                    *gto[D1_Z][k].get_simdd_mut(g) = e_2a * z;
+                }
+            }
+        },
+        1 => {
+            for k in 0..nctr {
+                for g in 0..BLKSIMDD {
+                    let e = exps[k].get_simdd(g);
+                    let e_2a = exps_2a[k].get_simdd(g);
+                    let x = coord[X].get_simdd(g);
+                    let y = coord[Y].get_simdd(g);
+                    let z = coord[Z].get_simdd(g);
+
+                    *gto[D1_X][3 * k + X].get_simdd_mut(g) = e_2a * x * x + e;
+                    *gto[D1_X][3 * k + Y].get_simdd_mut(g) = e_2a * x * y;
+                    *gto[D1_X][3 * k + Z].get_simdd_mut(g) = e_2a * x * z;
+
+                    *gto[D1_Y][3 * k + X].get_simdd_mut(g) = e_2a * y * x;
+                    *gto[D1_Y][3 * k + Y].get_simdd_mut(g) = e_2a * y * y + e;
+                    *gto[D1_Y][3 * k + Z].get_simdd_mut(g) = e_2a * y * z;
+
+                    *gto[D1_Z][3 * k + X].get_simdd_mut(g) = e_2a * z * x;
+                    *gto[D1_Z][3 * k + Y].get_simdd_mut(g) = e_2a * z * y;
+                    *gto[D1_Z][3 * k + Z].get_simdd_mut(g) = e_2a * z * z + e;
+                }
+            }
+        },
+        2 => {
+            for k in 0..nctr {
+                for g in 0..BLKSIMDD {
+                    let e = exps[k].get_simdd(g);
+                    let e_2a = exps_2a[k].get_simdd(g);
+                    let x = coord[X].get_simdd(g);
+                    let y = coord[Y].get_simdd(g);
+                    let z = coord[Z].get_simdd(g);
+
+                    let ex = e * x;
+                    let ey = e * y;
+                    let ez = e * z;
+                    let xx = x * x;
+                    let xy = x * y;
+                    let xz = x * z;
+                    let yy = y * y;
+                    let yz = y * z;
+                    let zz = z * z;
+                    let ax = e_2a * x;
+                    let ay = e_2a * y;
+                    let az = e_2a * z;
+
+                    *gto[D1_X][6 * k + XX].get_simdd_mut(g) = ax * xx + ex * 2.0;
+                    *gto[D1_X][6 * k + XY].get_simdd_mut(g) = ax * xy + ey;
+                    *gto[D1_X][6 * k + XZ].get_simdd_mut(g) = ax * xz + ez;
+                    *gto[D1_X][6 * k + YY].get_simdd_mut(g) = ax * yy;
+                    *gto[D1_X][6 * k + YZ].get_simdd_mut(g) = ax * yz;
+                    *gto[D1_X][6 * k + ZZ].get_simdd_mut(g) = ax * zz;
+
+                    *gto[D1_Y][6 * k + XX].get_simdd_mut(g) = ay * xx;
+                    *gto[D1_Y][6 * k + XY].get_simdd_mut(g) = ay * xy + ex;
+                    *gto[D1_Y][6 * k + XZ].get_simdd_mut(g) = ay * xz;
+                    *gto[D1_Y][6 * k + YY].get_simdd_mut(g) = ay * yy + ey * 2.0;
+                    *gto[D1_Y][6 * k + YZ].get_simdd_mut(g) = ay * yz + ez;
+                    *gto[D1_Y][6 * k + ZZ].get_simdd_mut(g) = ay * zz;
+
+                    *gto[D1_Z][6 * k + XX].get_simdd_mut(g) = az * xx;
+                    *gto[D1_Z][6 * k + XY].get_simdd_mut(g) = az * xy;
+                    *gto[D1_Z][6 * k + XZ].get_simdd_mut(g) = az * xz + ex;
+                    *gto[D1_Z][6 * k + YY].get_simdd_mut(g) = az * yy;
+                    *gto[D1_Z][6 * k + YZ].get_simdd_mut(g) = az * yz + ey;
+                    *gto[D1_Z][6 * k + ZZ].get_simdd_mut(g) = az * zz + ez * 2.0;
+                }
+            }
+        },
+        3 => {
+            for k in 0..nctr {
+                for g in 0..BLKSIMDD {
+                    let e = exps[k].get_simdd(g);
+                    let e_2a = exps_2a[k].get_simdd(g);
+                    let x = coord[X].get_simdd(g);
+                    let y = coord[Y].get_simdd(g);
+                    let z = coord[Z].get_simdd(g);
+
+                    let exx = e * x * x;
+                    let exy = e * x * y;
+                    let exz = e * x * z;
+                    let eyy = e * y * y;
+                    let eyz = e * y * z;
+                    let ezz = e * z * z;
+
+                    let xxx = x * x * x;
+                    let xxy = x * x * y;
+                    let xxz = x * x * z;
+                    let xyy = x * y * y;
+                    let xyz = x * y * z;
+                    let xzz = x * z * z;
+                    let yyy = y * y * y;
+                    let yyz = y * y * z;
+                    let yzz = y * z * z;
+                    let zzz = z * z * z;
+
+                    let ax = e_2a * x;
+                    let ay = e_2a * y;
+                    let az = e_2a * z;
+
+                    *gto[D1_X][10 * k + XXX].get_simdd_mut(g) = ax * xxx + exx * 3.0;
+                    *gto[D1_X][10 * k + XXY].get_simdd_mut(g) = ax * xxy + exy * 2.0;
+                    *gto[D1_X][10 * k + XXZ].get_simdd_mut(g) = ax * xxz + exz * 2.0;
+                    *gto[D1_X][10 * k + XYY].get_simdd_mut(g) = ax * xyy + eyy;
+                    *gto[D1_X][10 * k + XYZ].get_simdd_mut(g) = ax * xyz + eyz;
+                    *gto[D1_X][10 * k + XZZ].get_simdd_mut(g) = ax * xzz + ezz;
+                    *gto[D1_X][10 * k + YYY].get_simdd_mut(g) = ax * yyy;
+                    *gto[D1_X][10 * k + YYZ].get_simdd_mut(g) = ax * yyz;
+                    *gto[D1_X][10 * k + YZZ].get_simdd_mut(g) = ax * yzz;
+                    *gto[D1_X][10 * k + ZZZ].get_simdd_mut(g) = ax * zzz;
+
+                    *gto[D1_Y][10 * k + XXX].get_simdd_mut(g) = ay * xxx;
+                    *gto[D1_Y][10 * k + XXY].get_simdd_mut(g) = ay * xxy + exx;
+                    *gto[D1_Y][10 * k + XXZ].get_simdd_mut(g) = ay * xxz;
+                    *gto[D1_Y][10 * k + XYY].get_simdd_mut(g) = ay * xyy + exy * 2.0;
+                    *gto[D1_Y][10 * k + XYZ].get_simdd_mut(g) = ay * xyz + exz;
+                    *gto[D1_Y][10 * k + XZZ].get_simdd_mut(g) = ay * xzz;
+                    *gto[D1_Y][10 * k + YYY].get_simdd_mut(g) = ay * yyy + eyy * 3.0;
+                    *gto[D1_Y][10 * k + YYZ].get_simdd_mut(g) = ay * yyz + eyz * 2.0;
+                    *gto[D1_Y][10 * k + YZZ].get_simdd_mut(g) = ay * yzz + ezz;
+                    *gto[D1_Y][10 * k + ZZZ].get_simdd_mut(g) = ay * zzz;
+
+                    *gto[D1_Z][10 * k + XXX].get_simdd_mut(g) = az * xxx;
+                    *gto[D1_Z][10 * k + XXY].get_simdd_mut(g) = az * xxy;
+                    *gto[D1_Z][10 * k + XXZ].get_simdd_mut(g) = az * xxz + exx;
+                    *gto[D1_Z][10 * k + XYY].get_simdd_mut(g) = az * xyy;
+                    *gto[D1_Z][10 * k + XYZ].get_simdd_mut(g) = az * xyz + exy;
+                    *gto[D1_Z][10 * k + XZZ].get_simdd_mut(g) = az * xzz + exz * 2.0;
+                    *gto[D1_Z][10 * k + YYY].get_simdd_mut(g) = az * yyy;
+                    *gto[D1_Z][10 * k + YYZ].get_simdd_mut(g) = az * yyz + eyy;
+                    *gto[D1_Z][10 * k + YZZ].get_simdd_mut(g) = az * yzz + eyz * 2.0;
+                    *gto[D1_Z][10 * k + ZZZ].get_simdd_mut(g) = az * zzz + ezz * 3.0;
+                }
+            }
+        },
+        _ => {
+            // initialize pows buffer
+            let mut pows_buffer = unsafe { [[f64blk::uninit(); 3]; ANG_MAX + 2] };
+            for g in 0..BLKSIMDD {
+                pows_buffer[0][X].get_simdd_mut(g).fill(0.0);
+                pows_buffer[0][Y].get_simdd_mut(g).fill(0.0);
+                pows_buffer[0][Z].get_simdd_mut(g).fill(0.0);
+                pows_buffer[1][X].get_simdd_mut(g).fill(1.0);
+                pows_buffer[1][Y].get_simdd_mut(g).fill(1.0);
+                pows_buffer[1][Z].get_simdd_mut(g).fill(1.0);
+            }
+            let pows = &mut pows_buffer[1..];
+            for lx in 0..l {
+                for g in 0..BLKSIMDD {
+                    *pows[lx + 1][X].get_simdd_mut(g) = pows[lx][X].get_simdd(g) * coord[X].get_simdd(g);
+                    *pows[lx + 1][Y].get_simdd_mut(g) = pows[lx][Y].get_simdd(g) * coord[Y].get_simdd(g);
+                    *pows[lx + 1][Z].get_simdd_mut(g) = pows[lx][Z].get_simdd(g) * coord[Z].get_simdd(g);
+                }
+            }
+
+            let pows = &pows_buffer[1..];
+            let pows_1less = &pows_buffer;
+
+            for k in 0..nctr {
+                for (icart, (lx, ly, lz)) in gto_l_iter(l).enumerate() {
+                    for g in 0..BLKSIMDD {
+                        let e = exps[k].get_simdd(g);
+                        let e_2a = exps_2a[k].get_simdd(g);
+                        let x = coord[X].get_simdd(g);
+                        let y = coord[Y].get_simdd(g);
+                        let z = coord[Z].get_simdd(g);
+                        let pows_x = pows[lx][X].get_simdd(g);
+                        let pows_y = pows[ly][Y].get_simdd(g);
+                        let pows_z = pows[lz][Z].get_simdd(g);
+                        let pows_1less_x = pows_1less[lx][X].get_simdd(g);
+                        let pows_1less_y = pows_1less[ly][Y].get_simdd(g);
+                        let pows_1less_z = pows_1less[lz][Z].get_simdd(g);
+                        let pows_xyz = pows_x * pows_y * pows_z;
+
+                        let offset = ncart * k + icart;
+                        *gto[D1_X][offset].get_simdd_mut(g) = e_2a * pows_xyz * x + e * (lx as f64) * pows_1less_x * pows_y * pows_z;
+                        *gto[D1_Y][offset].get_simdd_mut(g) = e_2a * pows_xyz * y + e * (ly as f64) * pows_x * pows_1less_y * pows_z;
+                        *gto[D1_Z][offset].get_simdd_mut(g) = e_2a * pows_xyz * z + e * (lz as f64) * pows_x * pows_y * pows_1less_z;
+                    }
+                }
+            }
+        },
+    }
+}
+
+/// GTO with operator $\nabla$.
+///
+/// There are 3 components in total:
+///
+/// $$
+/// (\partial_x, \partial_y, \partial_z)
+/// $$
+///
+/// This struct uses the following low-level functions:
+/// - [`gto_contract_exp1`]
+/// - [`gto_shell_eval_grid_cart_ip`]
+pub struct GtoEvalDerivIp;
+impl GtoEvalAPI for GtoEvalDerivIp {
+    fn ne1(&self) -> usize {
+        1
+    }
+    fn ntensor(&self) -> usize {
+        3
+    }
+    fn gto_exp(
+        &self,
+        // arguments
+        ebuf: &mut [f64blk],
+        coord: &[f64blk; 3],
+        alpha: &[f64],
+        coeff: &[f64],
+        fac: f64,
+        // dimensions
+        shl_shape: [usize; 2],
+    ) {
+        let ectr = ebuf;
+        let [nctr, nprim] = shl_shape;
+        gto_contract_exp1(ectr, coord, alpha, coeff, fac, nprim, nctr);
+    }
+    fn gto_shell_eval(
+        &self,
+        // arguments
+        gto: &mut [f64blk],
+        exps: &[f64blk],
+        coord: &[f64blk; 3],
+        _alpha: &[f64],
+        _coeff: &[f64],
+        l: usize,
+        _center: [f64; 3],
+        // dimensions
+        shl_shape: [usize; 2],
+    ) {
+        let [nctr, _nprim] = shl_shape;
+        gto_shell_eval_grid_cart_ip(gto, exps, coord, l, nctr);
+    }
+    unsafe fn cint_c2s_ket_spinor(
+        &self,
+        gspa: *mut Complex<f64>,
+        gspb: *mut Complex<f64>,
+        gcart: *const f64,
+        lds: c_int,
+        ldc: c_int,
+        nctr: c_int,
+        kappa: c_int,
+        l: c_int,
+    ) {
+        crate::ffi::cint_ffi::CINTc2s_ket_spinor_sf1(gspa as _, gspb as _, gcart as _, lds, ldc, nctr, kappa, l);
+    }
+}
