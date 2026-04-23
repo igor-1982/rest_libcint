@@ -12,4 +12,12 @@ fn build_ecp() {
 
 fn main() {
     build_ecp();
+
+    // read CINT_DEV from environment variable;
+    // if CINT_DEV set to "1", link directory from CINT_DIR
+    if std::env::var("CINT_DEV").unwrap_or_default() == "1" {
+        let cint_dir = std::env::var("CINT_DIR").expect("CINT_DIR environment variable must be set when CINT_DEV=1");
+        println!("cargo:rustc-link-search=native={}", cint_dir);
+        println!("cargo:rustc-link-lib=cint");
+    }
 }
