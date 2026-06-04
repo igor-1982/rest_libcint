@@ -1034,7 +1034,7 @@ impl CInt {
         let shls_max = shls_slice.iter().map(|x| x[1]).max().unwrap_or(nbas);
 
         (shls_min..shls_max)
-            .into_par_iter()
+            .into_iter()
             .map(|shl| unsafe {
                 let shls = [shl; 4];
                 match self.cint_type {
