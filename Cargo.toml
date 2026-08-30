@@ -32,8 +32,5 @@ rstest = "0.25"
 ndarray = "0.15"
 approx = "0.5"
 
-[profile.dev]
-opt-level = 3
-
 [lib]
 doctest = false
