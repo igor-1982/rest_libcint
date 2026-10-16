@@ -120,7 +120,7 @@ pub fn init_h2o_def2_tzvp() -> CInt {
         2.4145128304249659e+00,  3.2723041000000003e-01,  1.0930883523645869e+00,  1.0307241000000000e-01,  4.5959135109675275e-01,  8.0000000000000004e-01,  2.2072263710762661e+00
     ];
 
-    CInt { atm, bas, ecpbas: vec![], env: c_env, cint_type: Spheric, c_opt: None }
+    CInt { atm, bas, ecpbas: vec![], env: c_env, cint_type: Spheric, c_opt: None, opt_cache: Default::default() }
 }
 
 /// Initialize a water molecule with the def2-universal-jkfit basis set.
@@ -369,7 +369,7 @@ pub fn init_sb2me4_cc_pvtz() -> CInt {
         [  1,   3,   2,   2,   0, 256, 258,   0],
     ];
 
-    CInt { atm, bas, ecpbas, env, cint_type: Spheric, c_opt: None }
+    CInt { atm, bas, ecpbas, env, cint_type: Spheric, c_opt: None, opt_cache: Default::default() }
 }
 
 #[rustfmt::skip]
@@ -905,5 +905,5 @@ pub fn init_c10h22_def2_qzvp() -> CInt {
            0.662             ,     1.2677419676430552,     1.397             ,     4.18506565393934  ]
     ;
 
-    CInt { atm, bas, ecpbas: vec![], env, cint_type: Spheric, c_opt: None }
+    CInt { atm, bas, ecpbas: vec![], env, cint_type: Spheric, c_opt: None, opt_cache: Default::default() }
 }

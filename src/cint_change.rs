@@ -139,7 +139,7 @@ impl FakeMolForChargeArg for f64 {
         let coef = 1.0 / (2.0 * PI.sqrt() * gaussian_int(2.0, exponent));
         fake_env.extend_from_slice(&[exponent, coef]);
 
-        CInt { atm: fake_atm, bas: fake_bas, ecpbas: vec![], env: fake_env, cint_type: CIntType::default(), c_opt: None }
+        CInt { atm: fake_atm, bas: fake_bas, ecpbas: vec![], env: fake_env, cint_type: CIntType::default(), c_opt: None, opt_cache: Default::default() }
     }
 }
 
@@ -189,7 +189,7 @@ impl FakeMolForChargeArg for &[f64] {
             ptr += 2;
         });
 
-        CInt { atm: fake_atm, bas: fake_bas, ecpbas: vec![], env: fake_env, cint_type: CIntType::default(), c_opt: None }
+        CInt { atm: fake_atm, bas: fake_bas, ecpbas: vec![], env: fake_env, cint_type: CIntType::default(), c_opt: None, opt_cache: Default::default() }
     }
 }
 
@@ -251,7 +251,7 @@ pub fn fakemol_for_cgtf_charge(coord: [f64; 3], exponents: &[f64], coeffs: &[f64
     fake_env.extend_from_slice(exponents);
     fake_env.extend_from_slice(&coeffs_converted);
 
-    CInt { atm: fake_atm, bas: fake_bas, ecpbas: vec![], env: fake_env, cint_type: CIntType::default(), c_opt: None }
+    CInt { atm: fake_atm, bas: fake_bas, ecpbas: vec![], env: fake_env, cint_type: CIntType::default(), c_opt: None, opt_cache: Default::default() }
 }
 
 impl CInt {
@@ -415,6 +415,8 @@ impl CInt {
     ///
     /// - [`with_cint_type`](CInt::with_cint_type)
     pub fn set_cint_type(&mut self, cint_type: impl Into<CIntType>) -> &mut Self {
+        // invalidate the optimizer cache: env\/atm\/bas changed
+        self.opt_cache.gen += 1;
         self.cint_type = cint_type.into();
         self
     }
@@ -480,6 +482,8 @@ impl CInt {
     /// - [`with_common_origin`](CInt::with_common_origin)
     /// - [`get_common_origin`](CInt::get_common_origin)
     pub fn set_common_origin(&mut self, origin: [f64; 3]) -> &mut Self {
+        // invalidate the optimizer cache: env\/atm\/bas changed
+        self.opt_cache.gen += 1;
         const PTR_COMMON_ORIG: usize = cint_ffi::PTR_COMMON_ORIG as usize;
         self.env[PTR_COMMON_ORIG..PTR_COMMON_ORIG + 3].copy_from_slice(&origin);
         self
@@ -546,6 +550,8 @@ impl CInt {
     /// - [`with_rinv_origin`](CInt::with_rinv_origin)
     /// - [`get_rinv_origin`](CInt::get_rinv_origin)
     pub fn set_rinv_origin(&mut self, origin: [f64; 3]) -> &mut Self {
+        // invalidate the optimizer cache: env\/atm\/bas changed
+        self.opt_cache.gen += 1;
         const PTR_RINV_ORIG: usize = cint_ffi::PTR_RINV_ORIG as usize;
         self.env[PTR_RINV_ORIG..PTR_RINV_ORIG + 3].copy_from_slice(&origin);
         self
@@ -613,6 +619,8 @@ impl CInt {
     /// - [`with_rinv_origin_atom`](CInt::with_rinv_origin_atom)
     /// - [`get_rinv_origin_atom`](CInt::get_rinv_origin_atom)
     pub fn set_rinv_origin_atom(&mut self, atm_id: usize) -> &mut Self {
+        // invalidate the optimizer cache: env\/atm\/bas changed
+        self.opt_cache.gen += 1;
         const AS_RINV_ORIG_ATOM: usize = cecp_ffi::AS_RINV_ORIG_ATOM as usize;
         self.env[AS_RINV_ORIG_ATOM] = atm_id as f64;
         self
@@ -666,6 +674,8 @@ impl CInt {
     ///
     /// - [`set_omega`](CInt::set_omega)
     pub fn set_range_coulomb(&mut self, range: f64) -> &mut Self {
+        // invalidate the optimizer cache: env\/atm\/bas changed
+        self.opt_cache.gen += 1;
         const PTR_RANGE_OMEGA: usize = cint_ffi::PTR_RANGE_OMEGA as usize;
         self.env[PTR_RANGE_OMEGA] = range;
         self
@@ -748,6 +758,8 @@ impl CInt {
     ///
     /// - [`set_range_coulomb`](CInt::set_range_coulomb)
     pub fn set_omega(&mut self, omega: f64) -> &mut Self {
+        // invalidate the optimizer cache: env\/atm\/bas changed
+        self.opt_cache.gen += 1;
         self.set_range_coulomb(omega)
     }
 
@@ -804,6 +816,8 @@ impl CInt {
 
     #[cfg(feature = "with_f12")]
     pub fn set_f12_zeta(&mut self, zeta: f64) -> &mut Self {
+        // invalidate the optimizer cache: env\/atm\/bas changed
+        self.opt_cache.gen += 1;
         const PTR_F12_ZETA: usize = cint_ffi::PTR_F12_ZETA as usize;
         self.env[PTR_F12_ZETA] = zeta;
         self
@@ -824,6 +838,8 @@ impl CInt {
 
     /// Set the nuclear model for a given atom.
     pub fn set_nuc_mod(&mut self, atm_id: usize, zeta: f64) -> &mut Self {
+        // invalidate the optimizer cache: env\/atm\/bas changed
+        self.opt_cache.gen += 1;
         const PTR_ZETA: usize = cint_ffi::PTR_ZETA as usize;
         const NUC_MOD_OF: usize = cint_ffi::NUC_MOD_OF as usize;
         const POINT_NUC: c_int = cint_ffi::POINT_NUC as c_int;
@@ -857,6 +873,8 @@ impl CInt {
     /// - [`with_rinv_zeta`](CInt::with_rinv_zeta)
     /// - [`get_rinv_zeta`](CInt::get_rinv_zeta)
     pub fn set_rinv_zeta(&mut self, zeta: f64) -> &mut Self {
+        // invalidate the optimizer cache: env\/atm\/bas changed
+        self.opt_cache.gen += 1;
         const PTR_RINV_ZETA: usize = cint_ffi::PTR_RINV_ZETA as usize;
         self.env[PTR_RINV_ZETA] = zeta;
         self
@@ -886,6 +904,8 @@ impl CInt {
     ///
     /// - [`with_rinv_at_nucleus`](CInt::with_rinv_at_nucleus)
     pub fn set_rinv_at_nucleus(&mut self, atm_id: usize) -> &mut Self {
+        // invalidate the optimizer cache: env\/atm\/bas changed
+        self.opt_cache.gen += 1;
         const PTR_ZETA: usize = cint_ffi::PTR_ZETA as usize;
         let zeta = self.env[self.atm[atm_id][PTR_ZETA] as usize];
         let rinv = self.atom_coord(atm_id);
@@ -975,6 +995,8 @@ impl CInt {
     }
 
     pub fn set_integral_screen(&mut self, screen: f64) -> &mut Self {
+        // invalidate the optimizer cache: env\/atm\/bas changed
+        self.opt_cache.gen += 1;
         const PTR_EXPCUTOFF: usize = cint_ffi::PTR_EXPCUTOFF as usize;
         self.env[PTR_EXPCUTOFF] = screen.ln();
         self
@@ -1020,6 +1042,8 @@ impl CInt {
     /// - [`with_geom`](CInt::with_geom)
     /// - [`get_geom`](CInt::get_geom)
     pub fn set_geom(&mut self, coords: &[[f64; 3]]) -> &mut Self {
+        // invalidate the optimizer cache: env\/atm\/bas changed
+        self.opt_cache.gen += 1;
         const PTR_COORD: usize = cint_ffi::PTR_COORD as usize;
 
         if self.natm() != coords.len() {
@@ -1085,6 +1109,8 @@ impl CInt {
     /// - [`get_grids`](CInt::get_grids)
     /// - [`try_clear_grids`](CInt::try_clear_grids)
     pub fn set_grids(&mut self, grids: &[[f64; 3]]) -> &mut Self {
+        // invalidate the optimizer cache: env\/atm\/bas changed
+        self.opt_cache.gen += 1;
         const NGRIDS: usize = cint_ffi::NGRIDS as usize;
         const PTR_GRIDS: usize = cint_ffi::PTR_GRIDS as usize;
 

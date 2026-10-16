@@ -38,7 +38,7 @@ use crate::ffi::cint_wrapper::get_cint_integrator;
 /// | `cgto` | atomic orbital basis (for developers, relative to specified starting shell by `shls_slice`) |
 /// | `cint`, `CInt` | libcint's [`CInt`] structure or instances |
 /// | `c_int` | [`std::ffi::c_int`] type ([`i32`] in most cases) |
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct CInt {
     /// Slots of atoms.
     ///
@@ -121,6 +121,66 @@ pub struct CInt {
 
     /// Optimizer for integral evaluation (not intended for user in most cases).
     pub c_opt: Option<Arc<CIntOptimizer>>,
+
+    /// Instance-level cache of libcint optimizers, so repeated `integrate*`
+    /// calls on an unchanged molecule stop rebuilding them (the build is
+    /// O(nbas²), ~10-25 ms for a few-hundred-shell basis). Entries are keyed
+    /// by (integrator name, generation); every mutation of `atm`/`bas`/`env`
+    /// through the `set_*`/`with_*` family bumps the generation, so stale
+    /// optimizers are never reused. Not part of [`PartialEq`].
+    pub(crate) opt_cache: OptCache,
+}
+
+/// Equality of the physical content only: the optimizer caches and the legacy
+/// `c_opt` slot are internal state.
+impl PartialEq for CInt {
+    fn eq(&self, other: &Self) -> bool {
+        self.atm == other.atm
+            && self.bas == other.bas
+            && self.ecpbas == other.ecpbas
+            && self.env == other.env
+            && self.cint_type == other.cint_type
+            && self.c_opt == other.c_opt
+    }
+}
+
+/// One cached optimizer: built for the molecule state identified by `gen`.
+#[derive(Debug, Clone)]
+pub(crate) struct OptCacheEntry {
+    pub(crate) intor: &'static str,
+    pub(crate) gen: u64,
+    pub(crate) opt: Arc<CIntOptimizer>,
+}
+
+/// Instance-level optimizer cache of one [`CInt`] (see `CInt::opt_cache`).
+///
+/// `gen` is a plain counter: it is only ever read through `&self` and bumped
+/// through `&mut self`, so no atomics are needed. The entry list is cloned
+/// deeply on `Clone` (a handful of `Arc`s): sharing it between clones would
+/// let two siblings that both mutated once (same `gen`, different `env`)
+/// contaminate each other.
+#[derive(Default)]
+pub(crate) struct OptCache {
+    pub(crate) gen: u64,
+    pub(crate) entries: std::sync::RwLock<Vec<OptCacheEntry>>,
+}
+
+impl Clone for OptCache {
+    fn clone(&self) -> Self {
+        Self {
+            gen: self.gen,
+            entries: std::sync::RwLock::new(
+                self.entries.read().map(|e| e.to_vec()).unwrap_or_default(),
+            ),
+        }
+    }
+}
+
+impl std::fmt::Debug for OptCache {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let n = self.entries.read().map(|e| e.len()).unwrap_or(0);
+        f.debug_struct("OptCache").field("gen", &self.gen).field("n_entries", &n).finish()
+    }
 }
 
 /// Distinguish between general integral or ECP (effective core potential)

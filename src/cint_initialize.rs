@@ -47,6 +47,7 @@ impl From<CIntSerdeIntermediate> for CInt {
                 false => CIntType::Spheric,
             },
             c_opt: None,
+            opt_cache: Default::default(),
         }
     }
 }
@@ -101,7 +102,22 @@ impl CInt {
     /// dumps()`.
     #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
-        CInt { atm: vec![], bas: vec![], env: vec![], ecpbas: vec![], cint_type: CIntType::Spheric, c_opt: None }
+        CInt { atm: vec![], bas: vec![], env: vec![], ecpbas: vec![], cint_type: CIntType::Spheric, c_opt: None, opt_cache: Default::default() }
+    }
+
+    /// Build a [`CInt`](crate::CInt) from raw parts, in the libcint AOS layout.
+    ///
+    /// The optimizer cache of the new instance starts empty. Prefer the builder
+    /// or serde constructors for regular use; this exists for tests and
+    /// low-level tooling that assemble `atm`/`bas`/`env` by hand.
+    pub fn from_parts(
+        atm: Vec<[core::ffi::c_int; 6]>,
+        bas: Vec<[core::ffi::c_int; 8]>,
+        ecpbas: Vec<[core::ffi::c_int; 8]>,
+        env: Vec<f64>,
+        cint_type: CIntType,
+    ) -> Self {
+        Self { atm, bas, ecpbas, env, cint_type, c_opt: None, opt_cache: Default::default() }
     }
 
     /// Legacy initializer for `CInt` (without ECP).

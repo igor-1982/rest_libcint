@@ -87,6 +87,6 @@ mod test {
             [0, 3, 1, 1, 1, 41, 43, 0],
         ];
 
-        CInt { atm, bas, ecpbas, env, cint_type: CIntType::Spheric, c_opt: None }
+        CInt::from_parts(atm, bas, ecpbas, env, CIntType::Spheric)
     }
 }

@@ -142,6 +142,30 @@ impl CInt {
         self.integrate_with_args_inner(args)
     }
 
+    /// Look up the cached optimizer of `(intor, current generation)`, or build
+    /// it exactly like the uncached path (on the per-call `data`) and store it.
+    /// See `CInt::opt_cache`.
+    fn cached_or_build_optimizer(
+        &self,
+        intor: &'static str,
+        integrator: &dyn Integrator,
+        data: &CInt,
+    ) -> std::sync::Arc<CIntOptimizer> {
+        let gen = self.opt_cache.gen;
+        if let Ok(entries) = self.opt_cache.entries.read() {
+            if let Some(entry) = entries.iter().find(|e| e.intor == intor && e.gen == gen) {
+                return entry.opt.clone();
+            }
+        }
+        let opt = std::sync::Arc::new(data.get_optimizer(integrator));
+        if let Ok(mut entries) = self.opt_cache.entries.write() {
+            // one entry per (intor) at the current generation is all that hits
+            entries.retain(|e| !(e.intor == intor && e.gen == gen));
+            entries.push(crate::cint::OptCacheEntry { intor, gen, opt: opt.clone() });
+        }
+        opt
+    }
+
     pub fn integrate_with_args_inner<F>(&self, args: IntegrateArgs<F>) -> Result<CIntOutput<F>, CIntError>
     where
         F: ComplexFloat + Send + Sync,
@@ -177,12 +201,20 @@ impl CInt {
             shls_slice = vec![[0, data.nbas() as c_int]; integrator.n_center()];
         }
         let aosym = args.aosym;
-        let cint_opt = data.get_optimizer(&*integrator);
+        // The libcint optimizer build is O(nbas²); cache it on `self` (the
+        // caller's molecule) across calls. `data` is a per-call copy (ECP
+        // merge / intor-suffix adjustments), so caching on it never hits.
+        // Grids intors read per-call grid data from env and bypass the cache.
+        let cint_opt = if has_grids {
+            std::sync::Arc::new(data.get_optimizer(&*integrator))
+        } else {
+            self.cached_or_build_optimizer(integrator.name(), &*integrator, &data)
+        };
 
         // perform most checks
         data.check_float_type::<F>()?;
         data.check_shls_slice(&*integrator, &shls_slice, aosym)?;
-        data.check_optimizer(&*integrator, &cint_opt)?;
+        data.check_optimizer(&*integrator, &*cint_opt)?;
 
         // prepare output and check size of output
         let mut out_shape = data.cgto_shape(&shls_slice, aosym);
@@ -218,19 +250,19 @@ impl CInt {
         match (has_grids, args.row_major) {
             (false, false) => {
                 // col-major, output is [shl0, shl1, ..., comp]
-                data.integral_inplace(&*integrator, out, &shls_slice, Some(&cint_opt), aosym)?;
+                data.integral_inplace(&*integrator, out, &shls_slice, Some(&*cint_opt), aosym)?;
             },
             (false, true) => {
                 // row-major, output is [comp, shl0, shl1, ...]
-                data.integral_row_major_inplace(&*integrator, out, &shls_slice, Some(&cint_opt), aosym)?;
+                data.integral_row_major_inplace(&*integrator, out, &shls_slice, Some(&*cint_opt), aosym)?;
             },
             (true, false) => {
                 // col-major with grids, output is [grids, shl0, shl1, comp]
-                data.integral_grids_inplace(&*integrator, out, &shls_slice, Some(&cint_opt))?;
+                data.integral_grids_inplace(&*integrator, out, &shls_slice, Some(&*cint_opt))?;
             },
             (true, true) => {
                 // row-major with grids, output is [comp, grids, shl0, shl1]
-                data.integral_grids_row_major_inplace(&*integrator, out, &shls_slice, Some(&cint_opt))?;
+                data.integral_grids_row_major_inplace(&*integrator, out, &shls_slice, Some(&*cint_opt))?;
             },
         };
 
